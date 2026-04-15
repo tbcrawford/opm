@@ -56,23 +56,21 @@
 
 ## Traceability
 
-*(Filled by roadmap agent)*
-
-| REQ-ID | Phase |
-|--------|-------|
-| CORE-01 | — |
-| CORE-02 | — |
-| CORE-03 | — |
-| CORE-04 | — |
-| CORE-05 | — |
-| CORE-06 | — |
-| CORE-07 | — |
-| CORE-08 | — |
-| SAFE-01 | — |
-| SAFE-02 | — |
-| SAFE-03 | — |
-| POLISH-01 | — |
-| POLISH-02 | — |
-| POWER-01 | — |
-| DIST-01 | — |
-| DIST-02 | — |
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| CORE-01 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Pending |
+| CORE-04 | Phase 1 | Pending |
+| CORE-05 | Phase 1 | Pending |
+| CORE-06 | Phase 1 | Pending |
+| CORE-07 | Phase 1 | Pending |
+| CORE-08 | Phase 1 | Pending |
+| POLISH-02 | Phase 1 | Pending |
+| SAFE-01 | Phase 2 | Pending |
+| SAFE-02 | Phase 2 | Pending |
+| SAFE-03 | Phase 2 | Pending |
+| POLISH-01 | Phase 2 | Pending |
+| POWER-01 | Phase 3 | Pending |
+| DIST-01 | Phase 3 | Pending |
+| DIST-02 | Phase 3 | Pending |
