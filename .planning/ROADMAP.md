@@ -19,7 +19,14 @@
   2. User can run `opm init` on a fresh machine and get a valid opm directory structure ready for OpenCode
   3. User can run `opm context create work && opm context use work` and immediately have `~/.config/opencode` point to the new profile — confirmed by `opm context show` printing `work`
   4. User can run `opm context ls` and see all profiles with the active one marked `*`, then `opm context inspect <name>` and see path and contents summary, then `opm context rm <name>` to remove a non-active profile
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Go module init + internal/paths + internal/symlink (foundation layer)
+- [ ] 01-02-PLAN.md — internal/store — all profile CRUD and state operations
+- [ ] 01-03-PLAN.md — opm init + opm context create + opm context use (core loop)
+- [ ] 01-04-PLAN.md — opm context ls + opm context inspect + opm context show (read commands)
+- [ ] 01-05-PLAN.md — opm context rm with --force auto-switch + human verify checkpoint
 
 ### Phase 2: Safety, Diagnostics & Polish
 **Goal**: Users are protected from destructive mistakes and can diagnose broken installs; shell completion works
@@ -48,6 +55,6 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation + Core CLI | 0/0 | Not started | - |
+| 1. Foundation + Core CLI | 0/5 | Not started | - |
 | 2. Safety, Diagnostics & Polish | 0/0 | Not started | - |
 | 3. Power Features + Distribution | 0/0 | Not started | - |
