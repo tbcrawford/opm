@@ -89,7 +89,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			fi, statErr := os.Lstat(p.Path)
 			if statErr != nil || !fi.IsDir() {
 				output.DoctorRow(w, output.StatusFail,
-					fmt.Sprintf("%s — not a valid directory", output.ProfileName(p.Name)))
+					fmt.Sprintf("%s — not a valid directory (%s)", output.ProfileName(p.Name), p.Path))
 				failures++
 			} else {
 				output.DoctorRow(w, output.StatusOK, output.ProfileName(p.Name))

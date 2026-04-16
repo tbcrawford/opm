@@ -123,7 +123,6 @@ const (
 
 // DoctorRow writes a single tabwriter-aligned doctor check line.
 func DoctorRow(tw *tabwriter.Writer, status DoctorStatus, msg string) {
-
 	switch status {
 	case StatusOK:
 		fmt.Fprintf(tw, "  %s\t%s\n", green.Sprint("✓"), msg)
