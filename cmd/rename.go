@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/opm-cli/opm/internal/output"
 	"github.com/opm-cli/opm/internal/paths"
@@ -43,7 +44,11 @@ func runRename(cmd *cobra.Command, args []string) error {
 	if wasActive {
 		newDir := s.ProfileDir(newName)
 		if err := symlink.SetAtomic(newDir, paths.OpencodeConfigDir()); err != nil {
-			return fmt.Errorf("update active symlink: %w", err)
+			// Rollback: move the directory back to its original name so OpenCode isn't broken.
+			if rerr := os.Rename(s.ProfileDir(newName), s.ProfileDir(oldName)); rerr != nil {
+				return fmt.Errorf("update active symlink: %w; rollback also failed: %v — profile directory is at %q", err, rerr, newName)
+			}
+			return fmt.Errorf("update active symlink: %w (rolled back directory rename)", err)
 		}
 		if err := s.SetCurrent(newName); err != nil {
 			return fmt.Errorf("update current: %w", err)
