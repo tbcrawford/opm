@@ -121,11 +121,6 @@ const (
 	StatusFail              // red ✗
 )
 
-// DoctorSection prints a dim section label for grouping doctor checks.
-func DoctorSection(w io.Writer, label string) {
-	fmt.Fprintln(w, dim.Sprint(label))
-}
-
 // DoctorRow writes a single tabwriter-aligned doctor check line.
 func DoctorRow(tw *tabwriter.Writer, status DoctorStatus, msg string) {
 
@@ -139,6 +134,11 @@ func DoctorRow(tw *tabwriter.Writer, status DoctorStatus, msg string) {
 	default:
 		fmt.Fprintf(tw, "  %s\t%s\n", dim.Sprint("?"), msg)
 	}
+}
+
+// DoctorSection prints a dim section label for grouping doctor checks.
+func DoctorSection(w io.Writer, label string) {
+	fmt.Fprintln(w, dim.Sprint(label))
 }
 
 // DoctorSummary writes the final summary line for `opm doctor`.
