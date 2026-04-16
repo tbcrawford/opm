@@ -3,6 +3,7 @@ package output_test
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 	"text/tabwriter"
 
@@ -106,6 +107,25 @@ func TestInspectProfile_Inactive(t *testing.T) {
 	assert.NotContains(t, got, "● active")
 }
 
+func TestInspectProfile_WithEntries(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "opencode.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	output.InspectProfile(&buf, "work", dir, false, entries)
+	got := buf.String()
+	assert.Contains(t, got, "agents/")
+	assert.Contains(t, got, "opencode.json")
+}
+
 func TestDoctorRow_OK(t *testing.T) {
 	var buf bytes.Buffer
 	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
@@ -122,6 +142,15 @@ func TestDoctorRow_Fail(t *testing.T) {
 	tw.Flush()
 	assert.Contains(t, buf.String(), "✗")
 	assert.Contains(t, buf.String(), "profile missing")
+}
+
+func TestDoctorRow_Warn(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
+	output.DoctorRow(tw, output.StatusWarn, "symlink is unusual")
+	tw.Flush()
+	assert.Contains(t, buf.String(), "⚠")
+	assert.Contains(t, buf.String(), "symlink is unusual")
 }
 
 func TestDoctorSummary_Healthy(t *testing.T) {

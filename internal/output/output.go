@@ -130,6 +130,8 @@ func DoctorRow(tw *tabwriter.Writer, status DoctorStatus, msg string) {
 		fmt.Fprintf(tw, "  %s\t%s\n", yellow.Sprint("⚠"), msg)
 	case StatusFail:
 		fmt.Fprintf(tw, "  %s\t%s\n", red.Sprint("✗"), msg)
+	default:
+		fmt.Fprintf(tw, "  %s\t%s\n", dim.Sprint("?"), msg)
 	}
 }
 
@@ -141,6 +143,7 @@ func DoctorSummary(w io.Writer, warnings, failures int) {
 	case failures == 0:
 		fmt.Fprintln(w, yellow.Sprintf("⚠ %d warning(s)", warnings))
 	default:
+		// Failures dominate; warnings are subsumed into the failure count display.
 		fmt.Fprintln(w, red.Sprintf("✗ %d problem(s) found", failures))
 	}
 }
