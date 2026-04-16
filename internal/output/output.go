@@ -22,6 +22,12 @@ var (
 	dim    = color.New(color.Faint)
 )
 
+var (
+	steelBlue = color.New(color.FgHiBlue, color.Bold)
+	cmdColor  = color.New(color.FgHiWhite, color.Bold)
+	flagColor = color.New(color.FgCyan)
+)
+
 // Success prints a green ✓ line followed by optional dim detail lines.
 // Used by all state-changing commands on success.
 func Success(w io.Writer, msg string, detail ...string) {
@@ -167,4 +173,30 @@ func DoctorSummary(w io.Writer, warnings, failures int) {
 		// Failures dominate; warnings are subsumed into the failure count display.
 		fmt.Fprintln(w, red.Sprintf("✗ %d problem(s) found", failures))
 	}
+}
+
+// HelpHeader writes the top-level header block for `opm --help`.
+func HelpHeader(w io.Writer, name, short string) {
+	fmt.Fprintf(w, "%s — %s\n\nUsage:\n  %s <command> [flags]\n\n", cmdColor.Sprint(name), short, name)
+}
+
+// HelpSection writes a colored section header (e.g. "Setup").
+func HelpSection(w io.Writer, label string) {
+	fmt.Fprintln(w, steelBlue.Sprint(label))
+}
+
+// HelpCommand writes a single command row inside a section.
+// alias is optional; pass "" to omit.
+// The name and description are tab-separated so callers can pipe through tabwriter.
+func HelpCommand(w io.Writer, name, description, alias string) {
+	aliasStr := ""
+	if alias != "" {
+		aliasStr = "  " + dim.Sprintf("(%s)", alias)
+	}
+	fmt.Fprintf(w, "  %s\t%s%s\n", cmdColor.Sprint(name), description, aliasStr)
+}
+
+// HelpFlag returns a formatted flag entry string for inline use.
+func HelpFlag(flag, description string) string {
+	return fmt.Sprintf("  %s    %s", flagColor.Sprint(flag), description)
 }

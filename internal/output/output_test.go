@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/tabwriter"
 
@@ -189,4 +190,33 @@ func TestDoctorSection(t *testing.T) {
 	var buf bytes.Buffer
 	output.DoctorSection(&buf, "Profiles")
 	assert.Equal(t, "Profiles\n", buf.String())
+}
+
+func TestHelpSection(t *testing.T) {
+	var buf strings.Builder
+	output.HelpSection(&buf, "Setup")
+	assert.Equal(t, "Setup\n", buf.String())
+}
+
+func TestHelpCommand(t *testing.T) {
+	var buf strings.Builder
+	output.HelpCommand(&buf, "init", "Initialize opm and migrate your existing OpenCode config", "")
+	assert.Equal(t, "  init\tInitialize opm and migrate your existing OpenCode config\n", buf.String())
+}
+
+func TestHelpCommandWithAlias(t *testing.T) {
+	var buf strings.Builder
+	output.HelpCommand(&buf, "list", "List all profiles", "ls")
+	assert.Equal(t, "  list\tList all profiles  (ls)\n", buf.String())
+}
+
+func TestHelpHeader(t *testing.T) {
+	var buf strings.Builder
+	output.HelpHeader(&buf, "opm", "OpenCode profile manager")
+	assert.Equal(t, "opm — OpenCode profile manager\n\nUsage:\n  opm <command> [flags]\n\n", buf.String())
+}
+
+func TestHelpFlag(t *testing.T) {
+	result := output.HelpFlag("--version", "Print version and exit")
+	assert.Equal(t, "  --version    Print version and exit", result)
 }
