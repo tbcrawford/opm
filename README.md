@@ -1,8 +1,6 @@
 <div align="center">
 
-<sup>OPENCODE PROFILE MANAGER</sup>
-
-# Your OpenCode.<br>Every context.
+<img src="assets/banner.png" alt="opm — OpenCode Profile Manager" width="720"/>
 
 Switch between completely isolated OpenCode environments —<br>different MCPs, agents, models, and configs — with a single command.
 
