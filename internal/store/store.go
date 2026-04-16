@@ -130,7 +130,8 @@ func (s *Store) ListProfiles() ([]Profile, error) {
 	// Check for dangling active profile: symlink points to a dir that no longer exists in profiles/.
 	// This happens when a user manually deletes a profile directory.
 	activeTarget, readlinkErr := os.Readlink(s.opencodeDir)
-	if readlinkErr == nil {
+	profilesBase := s.profilesDir() + string(filepath.Separator)
+	if readlinkErr == nil && strings.HasPrefix(activeTarget, profilesBase) {
 		activeName := filepath.Base(activeTarget)
 		found := false
 		for _, p := range profiles {
@@ -231,7 +232,7 @@ func (s *Store) IsOpmManaged() (bool, error) {
 	if !st.IsSymlink {
 		return false, nil
 	}
-	return strings.HasPrefix(st.Target, s.profilesDir()), nil
+	return strings.HasPrefix(st.Target, s.profilesDir()+string(filepath.Separator)), nil
 }
 
 // RenameProfile renames a profile directory from oldName to newName.
@@ -269,7 +270,7 @@ func (s *Store) Reset() error {
 	if err != nil {
 		return fmt.Errorf("inspect %s: %w", s.opencodeDir, err)
 	}
-	if !st.IsSymlink || !strings.HasPrefix(st.Target, s.profilesDir()) {
+	if !st.IsSymlink || !strings.HasPrefix(st.Target, s.profilesDir()+string(filepath.Separator)) {
 		return fmt.Errorf("%s is not managed by opm", s.opencodeDir)
 	}
 
@@ -291,7 +292,9 @@ func (s *Store) Reset() error {
 
 	if err := os.Rename(tmpDir, s.opencodeDir); err != nil {
 		// Best-effort rollback: restore the symlink so opencodeDir isn't left absent.
-		_ = symlink.SetAtomic(profileDir, s.opencodeDir)
+		if rerr := symlink.SetAtomic(profileDir, s.opencodeDir); rerr != nil {
+			return fmt.Errorf("install directory: %w; rollback also failed: %v — opencodeDir may be absent", err, rerr)
+		}
 		return fmt.Errorf("install directory: %w", err)
 	}
 
@@ -363,8 +366,10 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
 
 	_, err = io.Copy(dstFile, srcFile)
+	if cerr := dstFile.Close(); err == nil {
+		err = cerr
+	}
 	return err
 }
