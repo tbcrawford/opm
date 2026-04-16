@@ -57,7 +57,18 @@ func runInit(cmd *cobra.Command, args []string) error {
 			output.Success(cmd.OutOrStdout(), "Initialized opm", "Migrated ~/.config/opencode → profiles/default")
 			return nil
 		}
-		return fmt.Errorf("Already initialized (active: default)")
+		// profiles/default exists — only truly initialized if the symlink is also in place.
+		s := newStore()
+		managed, mErr := s.IsOpmManaged()
+		if mErr == nil && managed {
+			return fmt.Errorf("Already initialized (active: default)")
+		}
+		return fmt.Errorf(
+			"partial initialization detected: profiles/default exists but ~/.config/opencode is not managed by opm\n\n" +
+				"  To recover:\n" +
+				"    rm -rf ~/.config/opm/profiles/default\n" +
+				"    opm init",
+		)
 	}
 
 	s := newStore()
