@@ -56,7 +56,7 @@ func printRootHelp(root *cobra.Command) {
 				{"show", "Show the active profile name", ""},
 				{"inspect", "Show profile details and contents", ""},
 				{"rename", "Rename a profile", ""},
-				{"remove", "Remove a profile", "rm"},
+				{"remove", "Remove one or more profiles", "rm"},
 			},
 		},
 		{

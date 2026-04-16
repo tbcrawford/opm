@@ -14,10 +14,10 @@ import (
 var removeForce bool
 
 var removeCmd = &cobra.Command{
-	Use:               "remove <name>",
+	Use:               "remove <name> [name...]",
 	Aliases:           []string{"rm"},
-	Short:             "Remove a profile",
-	Args:              cobra.ExactArgs(1),
+	Short:             "Remove one or more profiles",
+	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: managedGuard,
 	ValidArgsFunction: profileNameCompletion,
 	SilenceUsage:      true,
@@ -30,31 +30,34 @@ func init() {
 }
 
 func runRemove(cmd *cobra.Command, args []string) error {
-	name := args[0]
 	s := newStore()
-
-	if _, err := s.GetProfile(name); err != nil {
-		return err
-	}
+	w := cmd.OutOrStdout()
 
 	active, err := s.ActiveProfile()
 	if err != nil {
 		return fmt.Errorf("determine active profile: %w", err)
 	}
 
-	isActive := active == name
-	w := cmd.OutOrStdout()
-
-	if isActive && !removeForce {
-		return fmt.Errorf("cannot remove the active profile\n\n  Switch first:     opm use <name>\n  Or force remove:  opm remove --force %s", name)
+	// Validate all names exist before removing anything.
+	for _, name := range args {
+		if _, err := s.GetProfile(name); err != nil {
+			return err
+		}
 	}
 
-	if isActive && removeForce {
-		switchTarget, err := selectAutoSwitchTarget(s, name)
+	// If the active profile is in the list, handle it first.
+	for _, name := range args {
+		if name != active {
+			continue
+		}
+		if !removeForce {
+			return fmt.Errorf("cannot remove the active profile\n\n  Switch first:     opm use <name>\n  Or force remove:  opm remove --force %s", name)
+		}
+		// Auto-switch away, excluding ALL names being removed.
+		switchTarget, err := selectAutoSwitchTarget(s, args)
 		if err != nil {
 			return err
 		}
-
 		targetDir := s.ProfileDir(switchTarget)
 		if err := symlink.SetAtomic(targetDir, paths.OpencodeConfigDir()); err != nil {
 			return fmt.Errorf("switch to %q: %w", switchTarget, err)
@@ -63,16 +66,24 @@ func runRemove(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("update current: %w", err)
 		}
 		output.Success(w, "Switched to "+output.ProfileName(switchTarget), "Auto-switched before removal")
+		break
 	}
 
-	if err := s.DeleteProfile(name, true); err != nil {
-		return err
+	for _, name := range args {
+		if err := s.DeleteProfile(name, true); err != nil {
+			return err
+		}
+		output.Success(w, "Removed profile "+output.ProfileName(name))
 	}
-	output.Success(w, "Removed profile "+output.ProfileName(name))
 	return nil
 }
 
-func selectAutoSwitchTarget(s *store.Store, deletingName string) (string, error) {
+func selectAutoSwitchTarget(s *store.Store, deletingNames []string) (string, error) {
+	removing := make(map[string]bool, len(deletingNames))
+	for _, n := range deletingNames {
+		removing[n] = true
+	}
+
 	profiles, err := s.ListProfiles()
 	if err != nil {
 		return "", err
@@ -80,7 +91,7 @@ func selectAutoSwitchTarget(s *store.Store, deletingName string) (string, error)
 
 	var candidates []string
 	for _, p := range profiles {
-		if p.Name != deletingName {
+		if !removing[p.Name] {
 			candidates = append(candidates, p.Name)
 		}
 	}
