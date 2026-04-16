@@ -36,6 +36,10 @@ func newStore() *store.Store {
 	return store.New(paths.OpmDir(), paths.OpencodeConfigDir())
 }
 
+func init() {
+	registerHelp(rootCmd)
+}
+
 // managedGuard blocks context subcommands if ~/.config/opencode is not managed by opm.
 func managedGuard(cmd *cobra.Command, args []string) error {
 	s := newStore()
