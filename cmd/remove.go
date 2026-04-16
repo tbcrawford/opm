@@ -11,24 +11,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rmForce bool
+var removeForce bool
 
-var rmCmd = &cobra.Command{
-	Use:               "rm <name>",
+var removeCmd = &cobra.Command{
+	Use:               "remove <name>",
+	Aliases:           []string{"rm"},
 	Short:             "Remove a profile",
 	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: managedGuard,
 	ValidArgsFunction: profileNameCompletion,
 	SilenceUsage:      true,
-	RunE:              runContextRm,
+	RunE:              runRemove,
 }
 
 func init() {
-	rmCmd.Flags().BoolVarP(&rmForce, "force", "f", false, "Force removal of the active profile (auto-switches first)")
-	contextCmd.AddCommand(rmCmd)
+	removeCmd.Flags().BoolVarP(&removeForce, "force", "f", false, "Force removal of the active profile (auto-switches first)")
+	rootCmd.AddCommand(removeCmd)
 }
 
-func runContextRm(cmd *cobra.Command, args []string) error {
+func runRemove(cmd *cobra.Command, args []string) error {
 	name := args[0]
 	s := newStore()
 
@@ -44,11 +45,11 @@ func runContextRm(cmd *cobra.Command, args []string) error {
 	isActive := active == name
 	w := cmd.OutOrStdout()
 
-	if isActive && !rmForce {
-		return fmt.Errorf("cannot remove the active profile\n\n  Switch first:     opm context use <name>\n  Or force remove:  opm context rm --force %s", name)
+	if isActive && !removeForce {
+		return fmt.Errorf("cannot remove the active profile\n\n  Switch first:     opm use <name>\n  Or force remove:  opm remove --force %s", name)
 	}
 
-	if isActive && rmForce {
+	if isActive && removeForce {
 		switchTarget, err := selectAutoSwitchTarget(s, name)
 		if err != nil {
 			return err
@@ -85,7 +86,7 @@ func selectAutoSwitchTarget(s *store.Store, deletingName string) (string, error)
 	}
 
 	if len(candidates) == 0 {
-		return "", fmt.Errorf("cannot remove the only profile\n\n  Create another profile first:\n    opm context create <name>")
+		return "", fmt.Errorf("cannot remove the only profile\n\n  Create another profile first:\n    opm create <name>")
 	}
 
 	for _, c := range candidates {
