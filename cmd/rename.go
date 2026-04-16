@@ -6,6 +6,7 @@ import (
 
 	"github.com/opm-cli/opm/internal/output"
 	"github.com/opm-cli/opm/internal/paths"
+	"github.com/opm-cli/opm/internal/store"
 	"github.com/opm-cli/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +27,12 @@ func init() {
 
 func runRename(cmd *cobra.Command, args []string) error {
 	oldName, newName := args[0], args[1]
+	if err := store.ValidateName(oldName); err != nil {
+		return err
+	}
+	if err := store.ValidateName(newName); err != nil {
+		return err
+	}
 	s := newStore()
 
 	active, err := s.ActiveProfile()

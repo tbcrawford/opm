@@ -38,6 +38,13 @@ func runRemove(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("determine active profile: %w", err)
 	}
 
+	// Validate all names before any filesystem access.
+	for _, name := range args {
+		if err := store.ValidateName(name); err != nil {
+			return err
+		}
+	}
+
 	// Validate all names exist before removing anything.
 	for _, name := range args {
 		if _, err := s.GetProfile(name); err != nil {

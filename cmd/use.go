@@ -5,6 +5,7 @@ import (
 
 	"github.com/opm-cli/opm/internal/output"
 	"github.com/opm-cli/opm/internal/paths"
+	"github.com/opm-cli/opm/internal/store"
 	"github.com/opm-cli/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,9 @@ func init() {
 
 func runUse(cmd *cobra.Command, args []string) error {
 	name := args[0]
+	if err := store.ValidateName(name); err != nil {
+		return err
+	}
 	s := newStore()
 
 	profileDir, err := s.GetProfile(name)

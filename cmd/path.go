@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/opm-cli/opm/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +23,9 @@ func init() {
 
 func runPath(cmd *cobra.Command, args []string) error {
 	name := args[0]
+	if err := store.ValidateName(name); err != nil {
+		return err
+	}
 	s := newStore()
 	profilePath, err := s.GetProfile(name)
 	if err != nil {
