@@ -32,8 +32,8 @@ func TestSuccess_NoDetail(t *testing.T) {
 
 func TestFailure_WithDetail(t *testing.T) {
 	var buf bytes.Buffer
-	output.Failure(&buf, "Cannot remove the active profile", "Switch first: opm context use <name>")
-	assert.Equal(t, "✗ Cannot remove the active profile\n  Switch first: opm context use <name>\n", buf.String())
+	output.Failure(&buf, "Cannot remove the active profile", "Switch first: opm use <name>")
+	assert.Equal(t, "✗ Cannot remove the active profile\n  Switch first: opm use <name>\n", buf.String())
 }
 
 func TestFailure_NoDetail(t *testing.T) {
@@ -50,8 +50,8 @@ func TestError_SingleLine(t *testing.T) {
 
 func TestError_MultiLine(t *testing.T) {
 	var buf bytes.Buffer
-	output.Error(&buf, "cannot remove the active profile\n\n  Switch first: opm context use <name>")
-	assert.Equal(t, "✗ cannot remove the active profile\n\n  Switch first: opm context use <name>\n", buf.String())
+	output.Error(&buf, "cannot remove the active profile\n\n  Switch first: opm use <name>")
+	assert.Equal(t, "✗ cannot remove the active profile\n\n  Switch first: opm use <name>\n", buf.String())
 }
 
 func TestProfileName(t *testing.T) {
