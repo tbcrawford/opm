@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"text/tabwriter"
 
 	"github.com/opm-cli/opm/internal/output"
 	"github.com/opm-cli/opm/internal/paths"
@@ -26,7 +25,6 @@ func init() {
 
 func runDoctor(cmd *cobra.Command, args []string) error {
 	out := cmd.OutOrStdout()
-	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
 
 	opencodeDir := paths.OpencodeConfigDir()
 	s := newStore()
@@ -39,17 +37,15 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	managed, err := s.IsOpmManaged()
 	if err != nil {
-		output.DoctorRow(w, output.StatusFail, fmt.Sprintf("~/.config/opencode: %v", err))
+		output.DoctorRow(out, output.StatusFail, fmt.Sprintf("~/.config/opencode: %v", err))
 		failures++
-		_ = w.Flush()
 		fmt.Fprintln(out)
 		output.DoctorSummary(out, warnings, failures)
 		os.Exit(1)
 	}
 	if !managed {
-		output.DoctorRow(w, output.StatusFail, "~/.config/opencode is not an opm-managed symlink — run 'opm init'")
+		output.DoctorRow(out, output.StatusFail, "~/.config/opencode is not an opm-managed symlink — run 'opm init'")
 		failures++
-		_ = w.Flush()
 		fmt.Fprintln(out)
 		output.DoctorSummary(out, warnings, failures)
 		os.Exit(1)
@@ -57,18 +53,17 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	st, err := symlink.Inspect(opencodeDir)
 	if err != nil {
-		output.DoctorRow(w, output.StatusFail, fmt.Sprintf("inspect ~/.config/opencode: %v", err))
+		output.DoctorRow(out, output.StatusFail, fmt.Sprintf("inspect ~/.config/opencode: %v", err))
 		failures++
 	} else if st.Dangling {
-		output.DoctorRow(w, output.StatusFail,
+		output.DoctorRow(out, output.StatusFail,
 			fmt.Sprintf("~/.config/opencode → %q (profile directory missing)", st.Target))
 		failures++
 	} else {
 		activeName, _ := s.ActiveProfile()
-		output.DoctorRow(w, output.StatusOK,
+		output.DoctorRow(out, output.StatusOK,
 			fmt.Sprintf("~/.config/opencode → %s", output.ProfileName(activeName)))
 	}
-	_ = w.Flush()
 	fmt.Fprintln(out)
 
 	// ── Profiles ─────────────────────────────────────────────────────────────
@@ -76,27 +71,26 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	profiles, err := s.ListProfiles()
 	if err != nil {
-		output.DoctorRow(w, output.StatusFail, fmt.Sprintf("list profiles: %v", err))
+		output.DoctorRow(out, output.StatusFail, fmt.Sprintf("list profiles: %v", err))
 		failures++
 	} else {
 		for _, p := range profiles {
 			if p.Dangling {
-				output.DoctorRow(w, output.StatusFail,
+				output.DoctorRow(out, output.StatusFail,
 					fmt.Sprintf("%s — directory missing", output.ProfileName(p.Name)))
 				failures++
 				continue
 			}
 			fi, statErr := os.Lstat(p.Path)
 			if statErr != nil || !fi.IsDir() {
-				output.DoctorRow(w, output.StatusFail,
+				output.DoctorRow(out, output.StatusFail,
 					fmt.Sprintf("%s — not a valid directory (%s)", output.ProfileName(p.Name), p.Path))
 				failures++
 			} else {
-				output.DoctorRow(w, output.StatusOK, output.ProfileName(p.Name))
+				output.DoctorRow(out, output.StatusOK, output.ProfileName(p.Name))
 			}
 		}
 	}
-	_ = w.Flush()
 
 	// ── Consistency (only shown when mismatch exists) ─────────────────────────
 	current, curErr := s.GetCurrent()
@@ -105,10 +99,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	if mismatch {
 		fmt.Fprintln(out)
 		output.DoctorSection(out, "Consistency")
-		output.DoctorRow(w, output.StatusWarn,
+		output.DoctorRow(out, output.StatusWarn,
 			fmt.Sprintf("current file says %q but active symlink points to %q", current, active))
 		warnings++
-		_ = w.Flush()
 	}
 
 	fmt.Fprintln(out)

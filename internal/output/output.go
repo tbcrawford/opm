@@ -4,12 +4,10 @@
 package output
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/fatih/color"
 	"github.com/opm-cli/opm/internal/store"
@@ -154,17 +152,17 @@ const (
 	StatusFail              // red ✗
 )
 
-// DoctorRow writes a single tabwriter-aligned doctor check line.
-func DoctorRow(tw *tabwriter.Writer, status DoctorStatus, msg string) {
+// DoctorRow writes a single doctor check line.
+func DoctorRow(w io.Writer, status DoctorStatus, msg string) {
 	switch status {
 	case StatusOK:
-		fmt.Fprintf(tw, "  %s\t%s\n", green.Sprint("✓"), msg)
+		fmt.Fprintf(w, "  %s  %s\n", green.Sprint("✓"), msg)
 	case StatusWarn:
-		fmt.Fprintf(tw, "  %s\t%s\n", yellow.Sprint("⚠"), msg)
+		fmt.Fprintf(w, "  %s  %s\n", yellow.Sprint("⚠"), msg)
 	case StatusFail:
-		fmt.Fprintf(tw, "  %s\t%s\n", red.Sprint("✗"), msg)
+		fmt.Fprintf(w, "  %s  %s\n", red.Sprint("✗"), msg)
 	default:
-		fmt.Fprintf(tw, "  %s\t%s\n", dim.Sprint("?"), msg)
+		fmt.Fprintf(w, "  %s  %s\n", dim.Sprint("?"), msg)
 	}
 }
 
@@ -215,13 +213,16 @@ func HelpFlag(flag, description string) string {
 // HelpFlagTable writes a tab-aligned flag table to w.
 // Each entry is [2]string{flagName, description}.
 func HelpFlagTable(w io.Writer, flags [][2]string) {
-	var buf bytes.Buffer
-	tw := tabwriter.NewWriter(&buf, 0, 0, 4, ' ', 0)
+	maxLen := 0
 	for _, f := range flags {
-		fmt.Fprintf(tw, "  %s\t%s\n", flagColor.Sprint(f[0]), f[1])
+		if len(f[0]) > maxLen {
+			maxLen = len(f[0])
+		}
 	}
-	_ = tw.Flush()
-	fmt.Fprint(w, buf.String())
+	for _, f := range flags {
+		pad := strings.Repeat(" ", maxLen-len(f[0]))
+		fmt.Fprintf(w, "  %s%s    %s\n", flagColor.Sprint(f[0]), pad, f[1])
+	}
 }
 
 // SubcmdHelp renders a styled help page for a single subcommand.
@@ -260,18 +261,29 @@ func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
 	if allFlags.HasFlags() {
 		fmt.Fprintln(w)
 		HelpSection(w, "Flags:")
-		var buf bytes.Buffer
-		tw := tabwriter.NewWriter(&buf, 0, 0, 4, ' ', 0)
+		type flagRow struct {
+			name  string
+			usage string
+		}
+		var rows []flagRow
 		allFlags.VisitAll(func(f *pflag.Flag) {
 			var name string
 			if f.Shorthand != "" {
-				name = flagColor.Sprintf("-%s, --%s", f.Shorthand, f.Name)
+				name = "-" + f.Shorthand + ", --" + f.Name
 			} else {
-				name = flagColor.Sprintf("--%s", f.Name)
+				name = "--" + f.Name
 			}
-			fmt.Fprintf(tw, "  %s\t%s\n", name, f.Usage)
+			rows = append(rows, flagRow{name, f.Usage})
 		})
-		_ = tw.Flush()
-		fmt.Fprint(w, buf.String())
+		maxLen := 0
+		for _, r := range rows {
+			if len(r.name) > maxLen {
+				maxLen = len(r.name)
+			}
+		}
+		for _, r := range rows {
+			pad := strings.Repeat(" ", maxLen-len(r.name))
+			fmt.Fprintf(w, "  %s%s    %s\n", flagColor.Sprint(r.name), pad, r.usage)
+		}
 	}
 }
