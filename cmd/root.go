@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -9,6 +10,10 @@ import (
 	"github.com/opm-cli/opm/internal/store"
 	"github.com/spf13/cobra"
 )
+
+// silentErr is returned by commands that want exit code 1 without printing an
+// error message. The error is already displayed inline (e.g. doctor's output).
+var silentErr = errors.New("silent exit 1")
 
 var rootCmd = &cobra.Command{
 	Use:           "opm",
@@ -21,7 +26,9 @@ var rootCmd = &cobra.Command{
 // Execute is the binary entry point called by main.go.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		output.Error(os.Stderr, err.Error())
+		if !errors.Is(err, silentErr) {
+			output.Error(os.Stderr, err.Error())
+		}
 		os.Exit(1)
 	}
 }

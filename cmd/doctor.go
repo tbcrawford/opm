@@ -41,14 +41,14 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		failures++
 		fmt.Fprintln(out)
 		output.DoctorSummary(out, warnings, failures)
-		os.Exit(1)
+		return silentErr
 	}
 	if !managed {
 		output.DoctorRow(out, output.StatusFail, "~/.config/opencode is not an opm-managed symlink — run 'opm init'")
 		failures++
 		fmt.Fprintln(out)
 		output.DoctorSummary(out, warnings, failures)
-		os.Exit(1)
+		return silentErr
 	}
 
 	st, err := symlink.Inspect(opencodeDir)
@@ -108,7 +108,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	output.DoctorSummary(out, warnings, failures)
 
 	if failures > 0 {
-		os.Exit(1)
+		return silentErr
 	}
 	return nil
 }
