@@ -15,14 +15,14 @@ var inspectCmd = &cobra.Command{
 	PersistentPreRunE: managedGuard,
 	ValidArgsFunction: profileNameCompletion,
 	SilenceUsage:      true,
-	RunE:              runContextInspect,
+	RunE:              runInspect,
 }
 
 func init() {
-	contextCmd.AddCommand(inspectCmd)
+	rootCmd.AddCommand(inspectCmd)
 }
 
-func runContextInspect(cmd *cobra.Command, args []string) error {
+func runInspect(cmd *cobra.Command, args []string) error {
 	name := args[0]
 	s := newStore()
 

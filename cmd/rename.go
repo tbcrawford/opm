@@ -16,14 +16,14 @@ var renameCmd = &cobra.Command{
 	PersistentPreRunE: managedGuard,
 	ValidArgsFunction: profileNameCompletion,
 	SilenceUsage:      true,
-	RunE:              runContextRename,
+	RunE:              runRename,
 }
 
 func init() {
-	contextCmd.AddCommand(renameCmd)
+	rootCmd.AddCommand(renameCmd)
 }
 
-func runContextRename(cmd *cobra.Command, args []string) error {
+func runRename(cmd *cobra.Command, args []string) error {
 	oldName, newName := args[0], args[1]
 	s := newStore()
 
