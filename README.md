@@ -15,23 +15,34 @@ brew install opm-cli/tap/opm
 ```
 # migrate your existing config once
 ❯ opm init
-✓ Migrated ~/.config/opencode → profile "default"
+✓ Initialized opm
+  Created default profile at ~/.config/opm/profiles/default/
 
 # create profiles for every context
-❯ opm create work && opm create experiments --from work
-✓ Created "work"
-✓ Created "experiments" from "work"
+❯ opm create work
+✓ Created profile work
+  ~/.config/opm/profiles/work/
+
+❯ opm create experiments --from work
+✓ Created profile experiments from work
+  ~/.config/opm/profiles/experiments/
 
 # switch instantly
 ❯ opm use work
 ✓ default → work
+  ~/.config/opencode → profiles/work
+
+❯ opm list
+○ default
+○ experiments
+● work
 ```
 
 <br>
 
 ---
 
-## 01 — The Problem
+## The Problem
 
 ### Config files shouldn't slow you down.
 
@@ -51,7 +62,7 @@ opm treats each context as a first-class **profile**: a full, isolated `~/.confi
 
 ---
 
-## 02 — Commands
+## Commands
 
 ### The complete surface area.
 
@@ -60,7 +71,7 @@ opm treats each context as a first-class **profile**: a full, isolated `~/.confi
 | `opm init` | Migrate your existing config into opm management. Non-destructive. |
 | `opm create <name>` | Create a new empty profile. Use `--from` to clone an existing profile as the starting point. |
 | `opm use <name>` | Switch the active profile via atomic symlink swap. Restart OpenCode to pick up the new profile. |
-| `opm list [-l]` | List all profiles. Active marked `*`. Dangling marked `!`. Pass `-l` to include paths. |
+| `opm list [-l]` | List all profiles. Active marked `●`. Dangling marked `!`. Pass `-l` to include paths. |
 | `opm show` | Print the name of the currently active profile. |
 | `opm copy <src> <dst>` | Clone a profile to a new name. |
 | `opm rename <old> <new>` | Rename a profile. Updates the symlink atomically if active. |
@@ -82,7 +93,7 @@ opm completion fish > ~/.config/fish/completions/opm.fish  # fish
 
 ---
 
-## 03 — Install
+## Install
 
 ### Up and running in under a minute.
 
