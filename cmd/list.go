@@ -7,20 +7,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var lsCmd = &cobra.Command{
-	Use:               "ls",
+var listCmd = &cobra.Command{
+	Use:               "list",
+	Aliases:           []string{"ls"},
 	Short:             "List all profiles",
 	Args:              cobra.NoArgs,
 	PersistentPreRunE: managedGuard,
 	SilenceUsage:      true,
-	RunE:              runContextLs,
+	RunE:              runList,
 }
 
 func init() {
-	contextCmd.AddCommand(lsCmd)
+	rootCmd.AddCommand(listCmd)
 }
 
-func runContextLs(cmd *cobra.Command, args []string) error {
+func runList(cmd *cobra.Command, args []string) error {
 	s := newStore()
 	profiles, err := s.ListProfiles()
 	if err != nil {
@@ -28,7 +29,7 @@ func runContextLs(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(profiles) == 0 {
-		fmt.Fprintln(cmd.OutOrStdout(), "No profiles found. Run 'opm context create <name>' to create one.")
+		fmt.Fprintln(cmd.OutOrStdout(), "No profiles found. Run 'opm create <name>' to create one.")
 		return nil
 	}
 
