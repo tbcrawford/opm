@@ -34,8 +34,8 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	warnings := 0
 	failures := 0
 
-	fmt.Fprintln(out, "opm doctor")
-	fmt.Fprintln(out)
+	// ── Symlink ──────────────────────────────────────────────────────────────
+	output.DoctorSection(out, "Symlink")
 
 	managed, err := s.IsOpmManaged()
 	if err != nil {
@@ -61,13 +61,18 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		failures++
 	} else if st.Dangling {
 		output.DoctorRow(w, output.StatusFail,
-			fmt.Sprintf("~/.config/opencode is a dangling symlink → %q (profile directory is missing)", st.Target))
+			fmt.Sprintf("~/.config/opencode → %q (profile directory missing)", st.Target))
 		failures++
 	} else {
 		activeName, _ := s.ActiveProfile()
 		output.DoctorRow(w, output.StatusOK,
 			fmt.Sprintf("~/.config/opencode → %s", output.ProfileName(activeName)))
 	}
+	_ = w.Flush()
+	fmt.Fprintln(out)
+
+	// ── Profiles ─────────────────────────────────────────────────────────────
+	output.DoctorSection(out, "Profiles")
 
 	profiles, err := s.ListProfiles()
 	if err != nil {
@@ -77,31 +82,35 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		for _, p := range profiles {
 			if p.Dangling {
 				output.DoctorRow(w, output.StatusFail,
-					fmt.Sprintf("Profile %s — directory missing", output.ProfileName(p.Name)))
+					fmt.Sprintf("%s — directory missing", output.ProfileName(p.Name)))
 				failures++
 				continue
 			}
 			fi, statErr := os.Lstat(p.Path)
 			if statErr != nil || !fi.IsDir() {
 				output.DoctorRow(w, output.StatusFail,
-					fmt.Sprintf("Profile %s — not a valid directory: %s", output.ProfileName(p.Name), p.Path))
+					fmt.Sprintf("%s — not a valid directory", output.ProfileName(p.Name)))
 				failures++
 			} else {
-				output.DoctorRow(w, output.StatusOK,
-					fmt.Sprintf("Profile %s — ok", output.ProfileName(p.Name)))
+				output.DoctorRow(w, output.StatusOK, output.ProfileName(p.Name))
 			}
 		}
 	}
+	_ = w.Flush()
 
+	// ── Consistency (only shown when mismatch exists) ─────────────────────────
 	current, curErr := s.GetCurrent()
 	active, actErr := s.ActiveProfile()
-	if curErr == nil && actErr == nil && current != "" && active != "" && current != active {
+	mismatch := curErr == nil && actErr == nil && current != "" && active != "" && current != active
+	if mismatch {
+		fmt.Fprintln(out)
+		output.DoctorSection(out, "Consistency")
 		output.DoctorRow(w, output.StatusWarn,
 			fmt.Sprintf("current file says %q but active symlink points to %q", current, active))
 		warnings++
+		_ = w.Flush()
 	}
 
-	_ = w.Flush()
 	fmt.Fprintln(out)
 	output.DoctorSummary(out, warnings, failures)
 

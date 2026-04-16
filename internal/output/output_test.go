@@ -170,3 +170,9 @@ func TestDoctorSummary_Warnings(t *testing.T) {
 	output.DoctorSummary(&buf, 1, 0)
 	assert.Contains(t, buf.String(), "1 warning")
 }
+
+func TestDoctorSection(t *testing.T) {
+	var buf bytes.Buffer
+	output.DoctorSection(&buf, "Profiles")
+	assert.Equal(t, "Profiles\n", buf.String())
+}
