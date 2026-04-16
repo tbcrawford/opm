@@ -32,6 +32,9 @@ func runUse(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Capture the current active profile before switching.
+	fromName, _ := s.ActiveProfile()
+
 	opencodeDir := paths.OpencodeConfigDir()
 	if err := symlink.SetAtomic(profileDir, opencodeDir); err != nil {
 		return fmt.Errorf("switch profile: %w", err)
@@ -41,7 +44,13 @@ func runUse(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("update current: %w", err)
 	}
 
-	output.Success(cmd.OutOrStdout(), "Switched to "+output.ProfileName(name),
+	var msg string
+	if fromName != "" && fromName != name {
+		msg = output.ProfileName(fromName) + " → " + output.ProfileName(name)
+	} else {
+		msg = "Switched to " + output.ProfileName(name)
+	}
+	output.Success(cmd.OutOrStdout(), msg,
 		output.ShortenHome(opencodeDir)+" → profiles/"+name)
 	return nil
 }
