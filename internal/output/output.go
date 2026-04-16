@@ -90,20 +90,28 @@ func ProfileTable(w io.Writer, profiles []store.Profile) {
 	}
 }
 
-// ProfileTableLong writes the list with an extra path column, tab-aligned.
+// ProfileTableLong writes the list with an extra path column, aligned by
+// padding the name to the longest name in the list.
 func ProfileTableLong(w io.Writer, profiles []store.Profile) {
-	tw := tabwriter.NewWriter(w, 0, 0, 4, ' ', 0)
+	// Find the longest name for manual padding (tabwriter cannot account for
+	// ANSI escape bytes added by color functions).
+	maxLen := 0
 	for _, p := range profiles {
-		switch {
-		case p.Dangling:
-			fmt.Fprintf(tw, "%s %s\t%s\n", red.Sprint("✗"), red.Sprint(p.Name), dim.Sprint("(missing) "+p.Path))
-		case p.Active:
-			fmt.Fprintf(tw, "%s %s\t%s\n", green.Sprint("●"), blue.Sprint(p.Name), dim.Sprint(ShortenHome(p.Path)))
-		default:
-			fmt.Fprintf(tw, "%s\t%s\n", dim.Sprintf("○ %s", p.Name), dim.Sprint(ShortenHome(p.Path)))
+		if len(p.Name) > maxLen {
+			maxLen = len(p.Name)
 		}
 	}
-	_ = tw.Flush()
+	for _, p := range profiles {
+		pad := strings.Repeat(" ", maxLen-len(p.Name))
+		switch {
+		case p.Dangling:
+			fmt.Fprintf(w, "%s %s%s    %s\n", red.Sprint("✗"), red.Sprint(p.Name), pad, dim.Sprint("(missing) "+p.Path))
+		case p.Active:
+			fmt.Fprintf(w, "%s %s%s    %s\n", green.Sprint("●"), blue.Sprint(p.Name), pad, dim.Sprint(ShortenHome(p.Path)))
+		default:
+			fmt.Fprintf(w, "%s %s%s    %s\n", dim.Sprint("○"), dim.Sprint(p.Name), pad, dim.Sprint(ShortenHome(p.Path)))
+		}
+	}
 }
 
 // InspectProfile writes the inspect block: name header, path row, contents list.
