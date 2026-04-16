@@ -33,6 +33,12 @@ func TestFailure_WithDetail(t *testing.T) {
 	assert.Equal(t, "✗ Cannot remove the active profile\n  Switch first: opm context use <name>\n", buf.String())
 }
 
+func TestFailure_NoDetail(t *testing.T) {
+	var buf bytes.Buffer
+	output.Failure(&buf, "Cannot remove the active profile")
+	assert.Equal(t, "✗ Cannot remove the active profile\n", buf.String())
+}
+
 func TestError_SingleLine(t *testing.T) {
 	var buf bytes.Buffer
 	output.Error(&buf, "profile \"foo\" does not exist")

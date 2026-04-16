@@ -1,3 +1,6 @@
+// Package output provides terminal rendering helpers for opm commands.
+// Color is suppressed automatically when stdout is not a terminal (via fatih/color)
+// and when the NO_COLOR environment variable is set.
 package output
 
 import (
@@ -16,16 +19,6 @@ var (
 	yellow = color.New(color.FgYellow)
 	dim    = color.New(color.Faint)
 )
-
-func init() {
-	// Disable color when stdout is not a terminal (e.g. piped to grep/file).
-	// fatih/color additionally respects the NO_COLOR env var automatically.
-	if fi, err := os.Stdout.Stat(); err == nil {
-		if fi.Mode()&os.ModeCharDevice == 0 {
-			color.NoColor = true
-		}
-	}
-}
 
 // Success prints a green ✓ line followed by optional dim detail lines.
 // Used by all state-changing commands on success.
