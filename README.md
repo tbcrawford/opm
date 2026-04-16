@@ -52,11 +52,11 @@ opm treats each context as a first-class **profile**: a full, isolated `~/.confi
 
 <br>
 
-| | |
-|---|---|
-| **Completely isolated** | Each profile has its own MCPs, agents, models, plugins, and `AGENTS.md`. Nothing bleeds between contexts. |
-| **Atomic switching** | The symlink swap is atomic. There is no window where `~/.config/opencode` is absent or in a bad state. |
-| **Safe to experiment** | Clone a working profile, break things freely. Your production config is never touched. Switch back to restore it instantly. |
+**Completely isolated** — Each profile has its own MCPs, agents, models, plugins, and `AGENTS.md`. Nothing bleeds between contexts.
+
+**Atomic switching** — The symlink swap is atomic. There is no window where `~/.config/opencode` is absent or in a bad state.
+
+**Safe to experiment** — Clone a working profile, break things freely. Your production config is never touched. Switch back to restore it instantly.
 
 <br>
 
