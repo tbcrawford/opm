@@ -1,0 +1,78 @@
+# GoReleaser v2 configuration for opm
+# https://goreleaser.com/customization/
+version: 2
+
+project_name: opm
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: opm
+    main: .
+    binary: opm
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+# Merge darwin amd64 + arm64 into a single universal binary
+universal_binaries:
+  - id: opm
+    replace: true
+
+archives:
+  - id: opm
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+
+# Homebrew tap
+# Prerequisites:
+#   1. Create the opm-cli/homebrew-tap repo on GitHub (must exist before first release)
+#   2. Add a GitHub PAT with 'repo' scope as GH_PAT in repo secrets
+brews:
+  - name: opm
+    repository:
+      owner: opm-cli
+      name: homebrew-tap
+      token: "{{ .Env.GH_PAT }}"
+    directory: Formula
+    homepage: "https://github.com/opm-cli/opm"
+    description: "OpenCode profile manager — switch configs like docker context"
+    license: MIT
+    test: |
+      system "#{bin}/opm", "--version"
+    install: |
+      bin.install "opm"

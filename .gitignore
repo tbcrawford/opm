@@ -1,0 +1,12 @@
+# GoReleaser build output
+dist/
+
+# Go build artifacts
+opm
+*.test
+
+# macOS
+.DS_Store
+
+# Visual brainstorming sessions
+.superpowers/
