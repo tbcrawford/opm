@@ -271,6 +271,8 @@ func (s *Store) Reset() error {
 	}
 
 	if err := os.Rename(tmpDir, s.opencodeDir); err != nil {
+		// Best-effort rollback: restore the symlink so opencodeDir isn't left absent.
+		_ = symlink.SetAtomic(profileDir, s.opencodeDir)
 		return fmt.Errorf("install directory: %w", err)
 	}
 
