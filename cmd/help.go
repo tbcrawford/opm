@@ -82,7 +82,9 @@ func printRootHelp(root *cobra.Command) {
 	}
 
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Flags:")
-	fmt.Fprintln(w, output.HelpFlag("--version", "Print version and exit"))
-	fmt.Fprintln(w, output.HelpFlag("--help", "Show this help"))
+	output.HelpSection(w, "Flags:")
+	output.HelpFlagTable(w, [][2]string{
+		{"--version", "Print version and exit"},
+		{"--help", "Show this help"},
+	})
 }

@@ -204,6 +204,18 @@ func HelpFlag(flag, description string) string {
 	return fmt.Sprintf("  %s    %s", flagColor.Sprint(flag), description)
 }
 
+// HelpFlagTable writes a tab-aligned flag table to w.
+// Each entry is [2]string{flagName, description}.
+func HelpFlagTable(w io.Writer, flags [][2]string) {
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 0, 0, 4, ' ', 0)
+	for _, f := range flags {
+		fmt.Fprintf(tw, "  %s\t%s\n", flagColor.Sprint(f[0]), f[1])
+	}
+	_ = tw.Flush()
+	fmt.Fprint(w, buf.String())
+}
+
 // SubcmdHelp renders a styled help page for a single subcommand.
 func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
 	useParts := strings.Fields(cmd.Use)
