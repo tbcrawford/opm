@@ -1,15 +1,15 @@
 <svg width="720" height="120" viewBox="0 0 720 120" xmlns="http://www.w3.org/2000/svg">
-  <rect width="720" height="120" rx="10" fill="#f6f8fa"/>
+  <rect width="720" height="120" rx="10" fill="#0d0d0d"/>
 
   <!-- content group shifted right to visually center the opm+rule+subtitle block -->
   <g transform="translate(130, 0)">
     <!-- opm wordmark, right-anchored so trailing edge is flush with the rule -->
     <text x="210" y="88" text-anchor="end"
       font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-      font-weight="800" font-size="72" fill="#0d0d0d" letter-spacing="-3">opm</text>
+      font-weight="800" font-size="72" fill="#ffffff" letter-spacing="-3">opm</text>
 
     <!-- vertical rule -->
-    <line x1="240" y1="18" x2="240" y2="102" stroke="#d0d7de" stroke-width="1.5"/>
+    <line x1="240" y1="18" x2="240" y2="102" stroke="#2a2a2a" stroke-width="1.5"/>
 
     <!-- right: OPENCODE label, subtitle, tagline -->
     <text x="262" y="48" text-anchor="start"
@@ -17,9 +17,9 @@
       font-size="11" font-weight="700" fill="#4ade80" letter-spacing="2">OPENCODE</text>
     <text x="262" y="70" text-anchor="start"
       font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-      font-size="16" font-weight="700" fill="#0d0d0d">Profile Manager</text>
+      font-size="16" font-weight="700" fill="#ffffff">Profile Manager</text>
     <text x="262" y="90" text-anchor="start"
       font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-      font-size="12" fill="#8c959f">Switch profiles. Stay in flow.</text>
+      font-size="12" fill="#555555">Switch profiles. Stay in flow.</text>
   </g>
 </svg>
