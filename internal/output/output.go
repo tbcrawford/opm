@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/opm-cli/opm/internal/store"
 )
 
 var (
@@ -63,4 +64,18 @@ func ShortenHome(path string) string {
 		return "~" + path[len(home):]
 	}
 	return path
+}
+
+// ProfileTable writes the ls listing: one profile per line with ●/○/✗ markers.
+func ProfileTable(w io.Writer, profiles []store.Profile) {
+	for _, p := range profiles {
+		switch {
+		case p.Dangling:
+			fmt.Fprintf(w, "%s %s %s\n", red.Sprint("✗"), red.Sprint(p.Name), dim.Sprint("(missing)"))
+		case p.Active:
+			fmt.Fprintf(w, "%s %s\n", green.Sprint("●"), blue.Sprint(p.Name))
+		default:
+			fmt.Fprintf(w, "%s\n", dim.Sprintf("○ %s", p.Name))
+		}
+	}
 }

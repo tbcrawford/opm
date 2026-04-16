@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/opm-cli/opm/internal/output"
+	"github.com/opm-cli/opm/internal/store"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,4 +63,25 @@ func TestShortenHome_UnderHome(t *testing.T) {
 
 func TestShortenHome_NotUnderHome(t *testing.T) {
 	assert.Equal(t, "/etc/foo", output.ShortenHome("/etc/foo"))
+}
+
+func TestProfileTable_Mixed(t *testing.T) {
+	var buf bytes.Buffer
+	profiles := []store.Profile{
+		{Name: "work", Active: true},
+		{Name: "personal"},
+		{Name: "staging", Dangling: true},
+	}
+	output.ProfileTable(&buf, profiles)
+	got := buf.String()
+	assert.Contains(t, got, "● work")
+	assert.Contains(t, got, "○ personal")
+	assert.Contains(t, got, "✗ staging")
+	assert.Contains(t, got, "(missing)")
+}
+
+func TestProfileTable_Empty(t *testing.T) {
+	var buf bytes.Buffer
+	output.ProfileTable(&buf, nil)
+	assert.Equal(t, "", buf.String())
 }
