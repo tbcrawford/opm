@@ -21,16 +21,13 @@ func init() {
 
 func runShow(cmd *cobra.Command, args []string) error {
 	s := newStore()
-	current, err := s.GetCurrent()
-	if err != nil {
-		return err
+	if name, err := s.ActiveProfile(); err == nil && name != "" {
+		fmt.Fprintln(cmd.OutOrStdout(), name)
+		return nil
 	}
-	if current == "" {
-		current, err = s.ActiveProfile()
-		if err != nil || current == "" {
-			return fmt.Errorf("no active profile — run 'opm init' first")
-		}
+	if name, err := s.GetCurrent(); err == nil && name != "" {
+		fmt.Fprintln(cmd.OutOrStdout(), name)
+		return nil
 	}
-	fmt.Fprintln(cmd.OutOrStdout(), current)
-	return nil
+	return fmt.Errorf("no active profile — run 'opm init' first")
 }
