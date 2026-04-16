@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/store"
 	"github.com/spf13/cobra"
 )
 

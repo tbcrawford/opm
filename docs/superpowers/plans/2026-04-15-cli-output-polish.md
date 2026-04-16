@@ -57,7 +57,7 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
-	"github.com/opm-cli/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/output"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -257,8 +257,8 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/store"
 	"github.com/stretchr/testify/assert"
 )
 ```
@@ -301,7 +301,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/opm-cli/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/store"
 )
 ```
 
@@ -473,8 +473,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/fatih/color"
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/store"
 	"github.com/stretchr/testify/assert"
 )
 ```
@@ -537,7 +537,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/fatih/color"
-	"github.com/opm-cli/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/store"
 )
 ```
 
@@ -574,9 +574,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -666,9 +666,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 
@@ -798,8 +798,8 @@ Replace `cmd/context_create.go` with:
 package cmd
 
 import (
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -859,9 +859,9 @@ Replace `cmd/context_use.go` with:
 package cmd
 
 import (
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 
@@ -909,9 +909,9 @@ Add `"fmt"` to the import block since it's used in the error wrapping:
 import (
 	"fmt"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 ```
@@ -948,7 +948,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/opm-cli/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -1015,7 +1015,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opm-cli/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -1087,9 +1087,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 
@@ -1173,10 +1173,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/store"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 
@@ -1302,9 +1302,9 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 

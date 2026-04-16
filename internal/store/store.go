@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/symlink"
 )
 
 // validName enforces profile name safety — per D-17.

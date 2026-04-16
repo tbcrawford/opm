@@ -60,16 +60,16 @@ changelog:
 
 # Homebrew tap
 # Prerequisites:
-#   1. Create the opm-cli/homebrew-tap repo on GitHub (must exist before first release)
+#   1. Create the tbcrawford/homebrew-tap repo on GitHub (must exist before first release)
 #   2. Add a GitHub PAT with 'repo' scope as GH_PAT in repo secrets
 brews:
   - name: opm
     repository:
-      owner: opm-cli
+      owner: tbcrawford
       name: homebrew-tap
       token: "{{ .Env.GH_PAT }}"
     directory: Formula
-    homepage: "https://github.com/opm-cli/opm"
+    homepage: "https://github.com/tbcrawford/opm"
     description: "OpenCode profile manager — switch configs like docker context"
     license: MIT
     test: |

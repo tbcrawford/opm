@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

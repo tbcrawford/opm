@@ -24,7 +24,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/opm-cli/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -99,10 +99,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/store"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 
@@ -232,8 +232,8 @@ git commit -m "feat: promote remove command to root, add rm alias, update error 
 package cmd
 
 import (
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -271,9 +271,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 
@@ -395,7 +395,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opm-cli/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -443,9 +443,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 

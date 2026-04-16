@@ -32,6 +32,6 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Required to push the Homebrew formula to opm-cli/homebrew-tap.
+          # Required to push the Homebrew formula to tbcrawford/homebrew-tap.
           # Create a PAT with 'repo' scope and add it as GH_PAT in repo secrets.
           GH_PAT: ${{ secrets.GH_PAT }}

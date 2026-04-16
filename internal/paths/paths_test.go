@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opm-cli/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/stretchr/testify/assert"
 )
 

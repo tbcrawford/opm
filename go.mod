@@ -1,4 +1,4 @@
-module github.com/opm-cli/opm
+module github.com/tbcrawford/opm
 
 go 1.26.2
 

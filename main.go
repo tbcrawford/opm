@@ -1,6 +1,6 @@
 package main
 
-import "github.com/opm-cli/opm/cmd"
+import "github.com/tbcrawford/opm/cmd"
 
 // version and commit are injected at build time by GoReleaser via ldflags:
 //

@@ -5,10 +5,10 @@
 Switch between completely isolated OpenCode environments —<br>different MCPs, agents, models, and configs — with a single command.
 
 ```sh
-brew install opm-cli/tap/opm
+brew install tbcrawford/tap/opm
 ```
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-000000?style=flat-square)](LICENSE)&nbsp;&nbsp;[![Go](https://img.shields.io/badge/Go_1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)&nbsp;&nbsp;[![Release](https://img.shields.io/github/v/release/opm-cli/opm?style=flat-square&color=000000)](https://github.com/opm-cli/opm/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-000000?style=flat-square)](LICENSE)&nbsp;&nbsp;[![Go](https://img.shields.io/badge/Go_1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)&nbsp;&nbsp;[![Release](https://img.shields.io/github/v/release/tbcrawford/opm?style=flat-square&color=000000)](https://github.com/tbcrawford/opm/releases)
 
 </div>
 
@@ -99,15 +99,15 @@ opm completion fish > ~/.config/fish/completions/opm.fish  # fish
 
 **Homebrew** (macOS)
 ```sh
-brew install opm-cli/tap/opm
+brew install tbcrawford/tap/opm
 ```
 
 **Go**
 ```sh
-go install github.com/opm-cli/opm@latest
+go install github.com/tbcrawford/opm@latest
 ```
 
-**Binary** — download the latest release from [GitHub Releases](https://github.com/opm-cli/opm/releases), extract, and place `opm` in your `$PATH`.
+**Binary** — download the latest release from [GitHub Releases](https://github.com/tbcrawford/opm/releases), extract, and place `opm` in your `$PATH`.
 
 <br>
 
@@ -138,6 +138,6 @@ Everything OpenCode reads and writes goes to the active profile transparently.
 
 <div align="center">
 
-MIT License · Built with Go · [Report an issue](https://github.com/opm-cli/opm/issues)
+MIT License · Built with Go · [Report an issue](https://github.com/tbcrawford/opm/issues)
 
 </div>

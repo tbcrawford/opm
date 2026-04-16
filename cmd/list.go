@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/opm-cli/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/output"
 	"github.com/spf13/cobra"
 )
 

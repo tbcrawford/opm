@@ -11,7 +11,7 @@ Phase 3 completes v1. After this phase: users can rename profiles, install opm v
 ### Requirements
 - **POWER-01**: `opm context rename <old> <new>`
 - **DIST-01**: GoReleaser + GitHub Actions release pipeline (macOS universal + Linux arm64/amd64)
-- **DIST-02**: Homebrew tap installable via `brew install opm-cli/tap/opm`
+- **DIST-02**: Homebrew tap installable via `brew install tbcrawford/tap/opm`
 
 </domain>
 
@@ -52,13 +52,13 @@ Phase 3 completes v1. After this phase: users can rename profiles, install opm v
 
 ### DIST-02: Homebrew Tap
 
-- **D-17:** Tap repo: `opm-cli/homebrew-tap` (GitHub org matches module path). GoReleaser pushes the formula automatically on release.
+- **D-17:** Tap repo: `tbcrawford/homebrew-tap` (GitHub org matches module path). GoReleaser pushes the formula automatically on release.
 - **D-18:** Formula directory: `Formula/` inside the tap repo.
 - **D-19:** Tap requires a `GH_PAT` secret in the main repo with `repo` scope to push to the tap repo. Document this in the workflow file as a comment.
 - **D-20:** Install command in formula: `bin.install "opm"`.
 - **D-21:** Test stanza: `system "#{bin}/opm", "--version"` — verifies the binary works after brew install.
-- **D-22:** The `.goreleaser.yaml` `brews` section uses `repository.owner: opm-cli` and `repository.name: homebrew-tap`.
-- **D-23:** Homebrew tap setup is **configuration-only in this phase** — the actual tap repo (`opm-cli/homebrew-tap`) is a prerequisite that must exist on GitHub for the formula push to succeed. Document this in the `.goreleaser.yaml` with a comment.
+- **D-22:** The `.goreleaser.yaml` `brews` section uses `repository.owner: tbcrawford` and `repository.name: homebrew-tap`.
+- **D-23:** Homebrew tap setup is **configuration-only in this phase** — the actual tap repo (`tbcrawford/homebrew-tap`) is a prerequisite that must exist on GitHub for the formula push to succeed. Document this in the `.goreleaser.yaml` with a comment.
 
 ---
 
@@ -94,7 +94,7 @@ Phase 3 completes v1. After this phase: users can rename profiles, install opm v
 ```go
 package main
 
-import "github.com/opm-cli/opm/cmd"
+import "github.com/tbcrawford/opm/cmd"
 
 func main() {
     cmd.Execute()

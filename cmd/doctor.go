@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opm-cli/opm/internal/output"
-	"github.com/opm-cli/opm/internal/paths"
-	"github.com/opm-cli/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/symlink"
 	"github.com/spf13/cobra"
 )
 

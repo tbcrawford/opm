@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/opm-cli/opm/internal/store"
+	"github.com/tbcrawford/opm/internal/store"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
