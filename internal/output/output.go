@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/fatih/color"
 	"github.com/opm-cli/opm/internal/store"
@@ -108,5 +109,38 @@ func InspectProfile(w io.Writer, name, path string, active bool, entries []os.Di
 			label = "Contents"
 		}
 		fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", label), entryName)
+	}
+}
+
+// DoctorStatus represents the result of a single doctor check.
+type DoctorStatus int
+
+const (
+	StatusOK   DoctorStatus = iota
+	StatusWarn              // yellow ⚠
+	StatusFail              // red ✗
+)
+
+// DoctorRow writes a single tabwriter-aligned doctor check line.
+func DoctorRow(tw *tabwriter.Writer, status DoctorStatus, msg string) {
+	switch status {
+	case StatusOK:
+		fmt.Fprintf(tw, "  %s\t%s\n", green.Sprint("✓"), msg)
+	case StatusWarn:
+		fmt.Fprintf(tw, "  %s\t%s\n", yellow.Sprint("⚠"), msg)
+	case StatusFail:
+		fmt.Fprintf(tw, "  %s\t%s\n", red.Sprint("✗"), msg)
+	}
+}
+
+// DoctorSummary writes the final summary line for `opm doctor`.
+func DoctorSummary(w io.Writer, warnings, failures int) {
+	switch {
+	case failures == 0 && warnings == 0:
+		fmt.Fprintln(w, green.Sprint("✓ All checks passed"))
+	case failures == 0:
+		fmt.Fprintln(w, yellow.Sprintf("⚠ %d warning(s)", warnings))
+	default:
+		fmt.Fprintln(w, red.Sprintf("✗ %d problem(s) found", failures))
 	}
 }

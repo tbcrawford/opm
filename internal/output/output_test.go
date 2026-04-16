@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"testing"
+	"text/tabwriter"
 
 	"github.com/fatih/color"
 	"github.com/opm-cli/opm/internal/output"
@@ -103,4 +104,40 @@ func TestInspectProfile_Inactive(t *testing.T) {
 	got := buf.String()
 	assert.Contains(t, got, "personal")
 	assert.NotContains(t, got, "● active")
+}
+
+func TestDoctorRow_OK(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
+	output.DoctorRow(tw, output.StatusOK, "everything fine")
+	tw.Flush()
+	assert.Contains(t, buf.String(), "✓")
+	assert.Contains(t, buf.String(), "everything fine")
+}
+
+func TestDoctorRow_Fail(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
+	output.DoctorRow(tw, output.StatusFail, "profile missing")
+	tw.Flush()
+	assert.Contains(t, buf.String(), "✗")
+	assert.Contains(t, buf.String(), "profile missing")
+}
+
+func TestDoctorSummary_Healthy(t *testing.T) {
+	var buf bytes.Buffer
+	output.DoctorSummary(&buf, 0, 0)
+	assert.Contains(t, buf.String(), "All checks passed")
+}
+
+func TestDoctorSummary_Failures(t *testing.T) {
+	var buf bytes.Buffer
+	output.DoctorSummary(&buf, 0, 2)
+	assert.Contains(t, buf.String(), "2 problem")
+}
+
+func TestDoctorSummary_Warnings(t *testing.T) {
+	var buf bytes.Buffer
+	output.DoctorSummary(&buf, 1, 0)
+	assert.Contains(t, buf.String(), "1 warning")
 }
