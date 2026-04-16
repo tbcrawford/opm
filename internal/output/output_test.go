@@ -171,6 +171,20 @@ func TestDoctorSummary_Warnings(t *testing.T) {
 	assert.Contains(t, buf.String(), "1 warning")
 }
 
+func TestProfileTableLong(t *testing.T) {
+	profiles := []store.Profile{
+		{Name: "default", Path: "/home/user/.config/opm/profiles/default", Active: false},
+		{Name: "work", Path: "/home/user/.config/opm/profiles/work", Active: true},
+	}
+	var buf bytes.Buffer
+	output.ProfileTableLong(&buf, profiles)
+	out := buf.String()
+	assert.Contains(t, out, "default")
+	assert.Contains(t, out, "/home/user/.config/opm/profiles/default")
+	assert.Contains(t, out, "work")
+	assert.Contains(t, out, "/home/user/.config/opm/profiles/work")
+}
+
 func TestDoctorSection(t *testing.T) {
 	var buf bytes.Buffer
 	output.DoctorSection(&buf, "Profiles")

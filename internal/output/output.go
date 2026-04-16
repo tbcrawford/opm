@@ -81,6 +81,22 @@ func ProfileTable(w io.Writer, profiles []store.Profile) {
 	}
 }
 
+// ProfileTableLong writes the list with an extra path column, tab-aligned.
+func ProfileTableLong(w io.Writer, profiles []store.Profile) {
+	tw := tabwriter.NewWriter(w, 0, 0, 4, ' ', 0)
+	for _, p := range profiles {
+		switch {
+		case p.Dangling:
+			fmt.Fprintf(tw, "%s %s\t%s\n", red.Sprint("✗"), red.Sprint(p.Name), dim.Sprint("(missing) "+p.Path))
+		case p.Active:
+			fmt.Fprintf(tw, "%s %s\t%s\n", green.Sprint("●"), blue.Sprint(p.Name), dim.Sprint(ShortenHome(p.Path)))
+		default:
+			fmt.Fprintf(tw, "%s\t%s\n", dim.Sprintf("○ %s", p.Name), dim.Sprint(ShortenHome(p.Path)))
+		}
+	}
+	_ = tw.Flush()
+}
+
 // InspectProfile writes the inspect block: name header, path row, contents list.
 func InspectProfile(w io.Writer, name, path string, active bool, entries []os.DirEntry) {
 	// Header: name + optional active badge

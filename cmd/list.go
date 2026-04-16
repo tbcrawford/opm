@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var listLong bool
+
 var listCmd = &cobra.Command{
 	Use:               "list",
 	Aliases:           []string{"ls"},
@@ -18,6 +20,7 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
+	listCmd.Flags().BoolVarP(&listLong, "long", "l", false, "Show profile paths")
 	rootCmd.AddCommand(listCmd)
 }
 
@@ -33,6 +36,10 @@ func runList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	output.ProfileTable(cmd.OutOrStdout(), profiles)
+	if listLong {
+		output.ProfileTableLong(cmd.OutOrStdout(), profiles)
+	} else {
+		output.ProfileTable(cmd.OutOrStdout(), profiles)
+	}
 	return nil
 }
