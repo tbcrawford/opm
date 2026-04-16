@@ -1,192 +1,118 @@
-# opm — OpenCode Profile Manager
+<div align="center">
 
-> Switch between completely isolated OpenCode environments with a single command.
+<sup>OPENCODE PROFILE MANAGER</sup>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![Release](https://img.shields.io/github/v/release/opm-cli/opm)](https://github.com/opm-cli/opm/releases)
+# Your OpenCode.<br>Every context.
 
----
-
-## The problem
-
-You use OpenCode for work. Different MCPs, a strict `AGENTS.md`, a particular model locked in. Then you want to use it for a personal project — different tools, relaxed settings, different agents. Or you want to experiment with a new MCP or agent setup without touching your working config. Right now, all of that means manually editing config files every time you switch. It's tedious. It's risky. It breaks your flow.
-
-## The solution
+Switch between completely isolated OpenCode environments —<br>different MCPs, agents, models, and configs — with a single command.
 
 ```sh
-opm use work
+brew install opm-cli/tap/opm
 ```
 
-One command. Each **profile** is a completely isolated `~/.config/opencode/` directory — its own MCPs, agents, models, plugins, and `AGENTS.md`. Switching atomically repoints the symlink. Restart OpenCode and you're in a different environment entirely.
+[![License: MIT](https://img.shields.io/badge/License-MIT-000000?style=flat-square)](LICENSE)&nbsp;&nbsp;[![Go](https://img.shields.io/badge/Go_1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)&nbsp;&nbsp;[![Release](https://img.shields.io/github/v/release/opm-cli/opm?style=flat-square&color=000000)](https://github.com/opm-cli/opm/releases)
+
+</div>
+
+```
+# migrate your existing config once
+❯ opm init
+✓ Migrated ~/.config/opencode → profile "default"
+
+# create profiles for every context
+❯ opm create work && opm create experiments --from work
+✓ Created "work"
+✓ Created "experiments" from "work"
+
+# switch instantly
+❯ opm use work
+✓ default → work
+```
+
+<br>
 
 ---
 
-## How it works
+## 01 — The Problem
 
-`opm init` migrates your existing config into a named profile and replaces `~/.config/opencode` with a symlink. From that point on, switching profiles is a single symlink swap:
+### Config files shouldn't slow you down.
 
-```
-~/.config/opencode  →  ~/.config/opm/profiles/work/
-```
+You use OpenCode for work with strict MCPs and a locked model. Then for personal projects with different tools and a relaxed `AGENTS.md`. Then to experiment with new tooling without touching what's working. Each switch means editing files by hand — tedious, error-prone, and risky.
 
-Everything OpenCode reads and writes goes to the active profile. No duplication. No manual copying. No state drift.
+opm treats each context as a first-class **profile**: a full, isolated `~/.config/opencode/` directory. Switching is a single symlink swap.
+
+<br>
+
+| | |
+|---|---|
+| **Completely isolated** | Each profile has its own MCPs, agents, models, plugins, and `AGENTS.md`. Nothing bleeds between contexts. |
+| **Atomic switching** | The symlink swap is atomic. There is no window where `~/.config/opencode` is absent or in a bad state. |
+| **Safe to experiment** | Clone a working profile, break things freely. Your production config is never touched. Switch back to restore it instantly. |
+
+<br>
 
 ---
 
-## Installation
+## 02 — Commands
+
+### The complete surface area.
+
+| Command | Description |
+|---|---|
+| `opm init` | Migrate your existing config into opm management. Non-destructive. |
+| `opm create <name>` | Create a new empty profile. Use `--from` to clone an existing profile as the starting point. |
+| `opm use <name>` | Switch the active profile via atomic symlink swap. Restart OpenCode to pick up the new profile. |
+| `opm list [-l]` | List all profiles. Active marked `*`. Dangling marked `!`. Pass `-l` to include paths. |
+| `opm show` | Print the name of the currently active profile. |
+| `opm copy <src> <dst>` | Clone a profile to a new name. |
+| `opm rename <old> <new>` | Rename a profile. Updates the symlink atomically if active. |
+| `opm remove <name...>` | Remove one or more profiles. Refuses the active profile without `--force`. |
+| `opm path <name>` | Print the absolute path to a profile directory. Useful for scripting. |
+| `opm inspect <name>` | Show profile details and directory contents. |
+| `opm doctor` | Run installation health checks. Exits with code 1 on failure. |
+| `opm reset` | Remove opm management and restore `~/.config/opencode` as a plain directory. |
+
+**Shell completion** — profile names are tab-completed for `use`, `copy`, `rename`, `remove`, `path`, and `inspect`:
+
+```sh
+opm completion bash > /etc/bash_completion.d/opm   # bash
+opm completion zsh  > "${fpath[1]}/_opm"           # zsh
+opm completion fish > ~/.config/fish/completions/opm.fish  # fish
+```
+
+<br>
+
+---
+
+## 03 — Install
+
+### Up and running in under a minute.
 
 **Homebrew** (macOS)
 ```sh
 brew install opm-cli/tap/opm
 ```
 
-**Download binary**
-
-Grab the latest from [GitHub Releases](https://github.com/opm-cli/opm/releases), extract, and place `opm` in your `$PATH`.
-
-**Build from source**
+**Go**
 ```sh
 go install github.com/opm-cli/opm@latest
 ```
 
----
+**Binary** — download the latest release from [GitHub Releases](https://github.com/opm-cli/opm/releases), extract, and place `opm` in your `$PATH`.
 
-## Quick start
-
-```sh
-# Migrate your existing config into a profile named "default"
-opm init
-
-# Create profiles for different contexts
-opm create work
-opm create personal
-opm create experiments
-
-# Or clone an existing profile as a starting point
-opm create sandbox --from work
-
-# Switch profiles (then restart OpenCode)
-opm use work
-
-# See what's active
-opm show
-
-# List everything
-opm list
-```
-
-```
-  NAME          
-* work          
-  personal      
-  experiments   
-  default       
-```
+<br>
 
 ---
 
-## Commands
+## How it works
 
-### `opm init`
-
-Migrates your existing `~/.config/opencode/` into opm management. Creates a profile named `default` from your current config and installs the symlink. Non-destructive — safe to run on an existing setup.
-
-### `opm create <name>`
-
-Creates a new, empty profile directory. Use `--from <profile>` to clone an existing profile as the starting point.
-
-```sh
-opm create experiments --from work
-```
-
-Profile names support letters, digits, `-`, `_`, and `.` (max 63 characters, must start with a letter or digit).
-
-### `opm use <name>`
-
-Switches the active profile. The symlink swap is atomic — there is no window where `~/.config/opencode` is absent or invalid. Restart OpenCode to pick up the new profile.
-
-### `opm list`
-
-Lists all profiles. The active profile is marked `*`. Dangling profiles (missing directory) are marked `!`. Pass `-l` to include paths.
-
-```sh
-opm list -l
-```
+`opm init` moves your existing `~/.config/opencode/` into a named profile directory and replaces it with a symlink. From that point on, `opm use <name>` atomically repoints the symlink to a different profile:
 
 ```
-  NAME          PATH
-* work          ~/.config/opm/profiles/work
-  personal      ~/.config/opm/profiles/personal
-  default       ~/.config/opm/profiles/default
+~/.config/opencode  →  ~/.config/opm/profiles/work/
 ```
 
-### `opm show`
-
-Prints the name of the currently active profile.
-
-### `opm inspect <name>`
-
-Shows detailed information about a profile: name, path, active status, and its contents.
-
-### `opm copy <src> <dst>`
-
-Copies an existing profile to a new name. Useful for snapshotting a known-good config before experimenting.
-
-### `opm rename <old> <new>`
-
-Renames a profile. If the renamed profile is currently active, the symlink is updated atomically.
-
-### `opm remove <name> [name...]`
-
-Removes one or more profiles. Refuses to remove the active profile unless `--force` is passed — in that case, opm switches to another available profile first.
-
-### `opm path <name>`
-
-Prints the absolute filesystem path to a profile directory. Useful for scripting.
-
-```sh
-code $(opm path work)
-```
-
-### `opm doctor`
-
-Runs health checks on your opm installation and reports any issues. Exits with code 1 if any check fails.
-
-```
-Symlink
-✓ ~/.config/opencode → work
-
-Profiles
-✓ work
-✓ personal
-✓ default
-
-All checks passed.
-```
-
-### `opm reset`
-
-Removes opm's symlink and restores `~/.config/opencode` as a plain directory (copied from the active profile). All profiles in `~/.config/opm/profiles/` are left intact. Use this to hand control back to OpenCode directly.
-
-### Shell completion
-
-```sh
-# bash
-opm completion bash > /etc/bash_completion.d/opm
-
-# zsh
-opm completion zsh > "${fpath[1]}/_opm"
-
-# fish
-opm completion fish > ~/.config/fish/completions/opm.fish
-```
-
-Profile names are tab-completed for `use`, `inspect`, `remove`, `copy`, `path`, and `rename`.
-
----
-
-## Storage layout
+Everything OpenCode reads and writes goes to the active profile transparently.
 
 ```
 ~/.config/opm/
@@ -195,12 +121,14 @@ Profile names are tab-completed for `use`, `inspect`, `remove`, `copy`, `path`, 
     ├── default/             # full OpenCode config directories
     ├── work/
     └── personal/
-
-~/.config/opencode  →  ~/.config/opm/profiles/work/
 ```
+
+<br>
 
 ---
 
-## License
+<div align="center">
 
-MIT
+MIT License · Built with Go · [Report an issue](https://github.com/opm-cli/opm/issues)
+
+</div>
