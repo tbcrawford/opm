@@ -12,12 +12,9 @@ import (
 // registerHelp sets a custom help function on the root command.
 // Call this from an init() in root.go.
 func registerHelp(root *cobra.Command) {
-	defaultHelp := root.HelpFunc()
 	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		// If called on a subcommand (e.g. `opm use --help`), fall back to
-		// cobra's default help so the subcommand's Short/Long and flags are shown.
 		if cmd != root {
-			defaultHelp(cmd, args)
+			output.SubcmdHelp(cmd.OutOrStdout(), cmd)
 			return
 		}
 		printRootHelp(cmd)
