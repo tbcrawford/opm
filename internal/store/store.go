@@ -185,6 +185,25 @@ func (s *Store) CreateProfile(name string) error {
 	return nil
 }
 
+// CopyProfile creates a new profile by copying an existing one.
+// Validates dst name, checks src exists and dst does not, then copies the directory tree.
+func (s *Store) CopyProfile(src, dst string) error {
+	if err := ValidateName(dst); err != nil {
+		return err
+	}
+	srcDir := s.ProfileDir(src)
+	dstDir := s.ProfileDir(dst)
+
+	if _, err := os.Lstat(srcDir); os.IsNotExist(err) {
+		return fmt.Errorf("context %q does not exist", src)
+	}
+	if _, err := os.Lstat(dstDir); err == nil {
+		return fmt.Errorf("context %q already exists", dst)
+	}
+
+	return copyDir(srcDir, dstDir)
+}
+
 // DeleteProfile removes a profile directory.
 // If force is false, refuses to delete the active profile.
 // If force is true, the caller is responsible for switching the symlink first (per D-01/D-02/D-03).

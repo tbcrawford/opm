@@ -459,6 +459,57 @@ func TestReset_RestoresDirectory(t *testing.T) {
 	assert.FileExists(t, filepath.Join(profileDir, "opencode.json"))
 }
 
+// ---- CopyProfile ----
+
+func TestCopyProfile_Basic(t *testing.T) {
+	root := t.TempDir()
+	s := store.New(root, t.TempDir())
+	require.NoError(t, s.Init())
+	require.NoError(t, s.CreateProfile("src"))
+	// Write a file into src.
+	require.NoError(t, os.WriteFile(filepath.Join(s.ProfileDir("src"), "opencode.json"), []byte(`{}`), 0o644))
+
+	require.NoError(t, s.CopyProfile("src", "dst"))
+
+	assert.DirExists(t, s.ProfileDir("dst"))
+	assert.FileExists(t, filepath.Join(s.ProfileDir("dst"), "opencode.json"))
+	// src still exists.
+	assert.DirExists(t, s.ProfileDir("src"))
+}
+
+func TestCopyProfile_SrcMissing(t *testing.T) {
+	root := t.TempDir()
+	s := store.New(root, t.TempDir())
+	require.NoError(t, s.Init())
+
+	err := s.CopyProfile("nonexistent", "dst")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"nonexistent" does not exist`)
+}
+
+func TestCopyProfile_DstExists(t *testing.T) {
+	root := t.TempDir()
+	s := store.New(root, t.TempDir())
+	require.NoError(t, s.Init())
+	require.NoError(t, s.CreateProfile("src"))
+	require.NoError(t, s.CreateProfile("dst"))
+
+	err := s.CopyProfile("src", "dst")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"dst" already exists`)
+}
+
+func TestCopyProfile_InvalidDstName(t *testing.T) {
+	root := t.TempDir()
+	s := store.New(root, t.TempDir())
+	require.NoError(t, s.Init())
+	require.NoError(t, s.CreateProfile("src"))
+
+	err := s.CopyProfile("src", "bad name!")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid profile name")
+}
+
 func TestReset_PreservesProfiles(t *testing.T) {
 	root := t.TempDir()
 	opencodeDir := filepath.Join(t.TempDir(), "opencode")
