@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -236,4 +237,113 @@ func (s *Store) RenameProfile(oldName, newName string) error {
 		return fmt.Errorf("rename profile %q to %q: %w", oldName, newName, err)
 	}
 	return nil
+}
+
+// Reset removes opm's management of opencodeDir by:
+//  1. Verifying opencodeDir is an opm-managed symlink.
+//  2. Copying the active profile directory to opencodeDir as a real directory.
+//  3. Removing the current file.
+//
+// All profile data under the store root is left intact.
+func (s *Store) Reset() error {
+	st, err := symlink.Inspect(s.opencodeDir)
+	if err != nil {
+		return fmt.Errorf("inspect %s: %w", s.opencodeDir, err)
+	}
+	if !st.IsSymlink || !strings.HasPrefix(st.Target, s.profilesDir()) {
+		return fmt.Errorf("%s is not managed by opm", s.opencodeDir)
+	}
+
+	profileDir := st.Target
+	tmpDir := s.opencodeDir + ".opm-reset-tmp"
+
+	// Clean up any leftover tmp from a prior crash.
+	_ = os.RemoveAll(tmpDir)
+
+	if err := copyDir(profileDir, tmpDir); err != nil {
+		_ = os.RemoveAll(tmpDir)
+		return fmt.Errorf("copy profile: %w", err)
+	}
+
+	if err := os.Remove(s.opencodeDir); err != nil {
+		_ = os.RemoveAll(tmpDir)
+		return fmt.Errorf("remove symlink: %w", err)
+	}
+
+	if err := os.Rename(tmpDir, s.opencodeDir); err != nil {
+		return fmt.Errorf("install directory: %w", err)
+	}
+
+	// Best-effort: remove the current file. Non-fatal if absent.
+	_ = os.Remove(s.currentFile())
+	return nil
+}
+
+// copyDir recursively copies src into dst.
+// Regular files are copied byte-for-byte. Symlinks are re-created.
+// dst must not exist before calling.
+func copyDir(src, dst string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.Type()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(srcPath)
+			if err != nil {
+				return err
+			}
+			if err := os.Symlink(target, dstPath); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if entry.IsDir() {
+			if err := copyDir(srcPath, dstPath); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := copyFile(srcPath, dstPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// copyFile copies a single regular file from src to dst, preserving permissions.
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	info, err := srcFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	dstFile, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, info.Mode())
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }

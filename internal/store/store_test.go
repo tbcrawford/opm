@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/opm-cli/opm/internal/store"
+	"github.com/opm-cli/opm/internal/symlink"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -406,4 +407,74 @@ func TestRenameProfile_SameNameIsNoop(t *testing.T) {
 	_ = err
 	_, statErr := os.Lstat(st.ProfileDir("work"))
 	assert.NoError(t, statErr, "profile should still exist after rename to same name")
+}
+
+// ---- Reset ----
+
+func TestReset_NotManaged(t *testing.T) {
+	root := t.TempDir()
+	opencode := t.TempDir() // plain directory, not a symlink
+	s := store.New(root, opencode)
+
+	err := s.Reset()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not managed by opm")
+}
+
+func TestReset_RestoresDirectory(t *testing.T) {
+	root := t.TempDir()
+	opencodeDir := filepath.Join(t.TempDir(), "opencode")
+
+	// Set up a profile with a file in it.
+	s := store.New(root, opencodeDir)
+	require.NoError(t, s.Init())
+	require.NoError(t, s.CreateProfile("default"))
+	profileDir := s.ProfileDir("default")
+
+	// Write a file into the profile.
+	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "opencode.json"), []byte(`{}`), 0o644))
+
+	// Install the symlink.
+	require.NoError(t, symlink.SetAtomic(profileDir, opencodeDir))
+	require.NoError(t, s.SetCurrent("default"))
+
+	// Reset.
+	require.NoError(t, s.Reset())
+
+	// opencodeDir should now be a real directory, not a symlink.
+	info, err := os.Lstat(opencodeDir)
+	require.NoError(t, err)
+	assert.False(t, info.Mode()&os.ModeSymlink != 0, "opencodeDir should not be a symlink after reset")
+	assert.True(t, info.IsDir(), "opencodeDir should be a directory after reset")
+
+	// The file from the profile should be present.
+	assert.FileExists(t, filepath.Join(opencodeDir, "opencode.json"))
+
+	// The current file should be gone.
+	_, err = os.Stat(filepath.Join(root, "current"))
+	assert.True(t, os.IsNotExist(err), "current file should be removed after reset")
+
+	// Profile directory should still exist (copy, not move).
+	assert.DirExists(t, profileDir)
+	assert.FileExists(t, filepath.Join(profileDir, "opencode.json"))
+}
+
+func TestReset_PreservesProfiles(t *testing.T) {
+	root := t.TempDir()
+	opencodeDir := filepath.Join(t.TempDir(), "opencode")
+
+	s := store.New(root, opencodeDir)
+	require.NoError(t, s.Init())
+	require.NoError(t, s.CreateProfile("default"))
+	require.NoError(t, s.CreateProfile("work"))
+
+	profileDir := s.ProfileDir("default")
+	require.NoError(t, symlink.SetAtomic(profileDir, opencodeDir))
+	require.NoError(t, s.SetCurrent("default"))
+
+	require.NoError(t, s.Reset())
+
+	// Both profiles still exist.
+	assert.DirExists(t, s.ProfileDir("default"))
+	assert.DirExists(t, s.ProfileDir("work"))
 }
