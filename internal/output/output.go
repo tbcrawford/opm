@@ -240,12 +240,6 @@ func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
 		fmt.Fprintln(w, cmd.Long)
 	}
 
-	fmt.Fprintln(w)
-	HelpSection(w, "Usage:")
-	// Build the full usage line: "opm <use-field>" rather than cmd.UseLine()
-	// which omits the root command name for standalone (parentless) commands.
-	fmt.Fprintf(w, "  opm %s [flags]\n", cmd.Use)
-
 	allFlags := &pflag.FlagSet{}
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Hidden {
@@ -257,6 +251,16 @@ func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
 			allFlags.AddFlag(f)
 		}
 	})
+
+	fmt.Fprintln(w)
+	HelpSection(w, "Usage:")
+	// Build the full usage line: "opm <use-field>" rather than cmd.UseLine()
+	// which omits the root command name for standalone (parentless) commands.
+	if allFlags.HasFlags() {
+		fmt.Fprintf(w, "  opm %s [flags]\n", cmd.Use)
+	} else {
+		fmt.Fprintf(w, "  opm %s\n", cmd.Use)
+	}
 
 	if allFlags.HasFlags() {
 		fmt.Fprintln(w)

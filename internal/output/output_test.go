@@ -232,7 +232,8 @@ func TestSubcmdHelp_NoFlags(t *testing.T) {
 	out := buf.String()
 	assert.Contains(t, out, "opm use — Switch to a profile\n")
 	assert.Contains(t, out, "Usage:\n")
-	assert.Contains(t, out, "  opm use <name> [flags]\n")
+	assert.Contains(t, out, "  opm use <name>\n")
+	assert.NotContains(t, out, "[flags]")
 	assert.NotContains(t, out, "Flags:\n")
 }
 
