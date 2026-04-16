@@ -11,6 +11,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/opm-cli/opm/internal/output"
 	"github.com/opm-cli/opm/internal/store"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -219,4 +220,55 @@ func TestHelpHeader(t *testing.T) {
 func TestHelpFlag(t *testing.T) {
 	result := output.HelpFlag("--version", "Print version and exit")
 	assert.Equal(t, "  --version    Print version and exit", result)
+}
+
+func TestSubcmdHelp_NoFlags(t *testing.T) {
+	cmd := &cobra.Command{
+		Use:   "use <name>",
+		Short: "Switch to a profile",
+	}
+	var buf bytes.Buffer
+	output.SubcmdHelp(&buf, cmd)
+	out := buf.String()
+	assert.Contains(t, out, "opm use — Switch to a profile\n")
+	assert.Contains(t, out, "Usage:\n")
+	assert.Contains(t, out, "  opm use <name> [flags]\n")
+	assert.NotContains(t, out, "Flags:\n")
+}
+
+func TestSubcmdHelp_WithLong(t *testing.T) {
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "Initialize opm",
+		Long:  "Migrates ~/.config/opencode to a default profile.",
+	}
+	var buf bytes.Buffer
+	output.SubcmdHelp(&buf, cmd)
+	out := buf.String()
+	assert.Contains(t, out, "Migrates ~/.config/opencode to a default profile.\n")
+}
+
+func TestSubcmdHelp_WithFlag(t *testing.T) {
+	cmd := &cobra.Command{
+		Use:   "create <name>",
+		Short: "Create a new profile",
+	}
+	cmd.Flags().String("from", "", "Copy an existing profile as the starting point")
+	var buf bytes.Buffer
+	output.SubcmdHelp(&buf, cmd)
+	out := buf.String()
+	assert.Contains(t, out, "--from")
+	assert.Contains(t, out, "Copy an existing profile as the starting point")
+}
+
+func TestSubcmdHelp_WithShorthand(t *testing.T) {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all profiles",
+	}
+	cmd.Flags().BoolP("long", "l", false, "Show profile paths")
+	var buf bytes.Buffer
+	output.SubcmdHelp(&buf, cmd)
+	out := buf.String()
+	assert.Contains(t, out, "-l, --long")
 }

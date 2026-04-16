@@ -12,6 +12,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/opm-cli/opm/internal/store"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -199,4 +201,50 @@ func HelpCommand(w io.Writer, name, description, alias string) {
 // HelpFlag returns a formatted flag entry string for inline use.
 func HelpFlag(flag, description string) string {
 	return fmt.Sprintf("  %s    %s", flagColor.Sprint(flag), description)
+}
+
+// SubcmdHelp renders a styled help page for a single subcommand.
+func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
+	useParts := strings.Fields(cmd.Use)
+	cmdName := "opm"
+	if len(useParts) > 0 {
+		cmdName = "opm " + useParts[0]
+	}
+
+	fmt.Fprintf(w, "%s — %s\n", steelBlue.Sprint(cmdName), cmd.Short)
+
+	if cmd.Long != "" {
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, cmd.Long)
+	}
+
+	fmt.Fprintln(w)
+	HelpSection(w, "Usage:")
+	// Build the full usage line: "opm <use-field>" rather than cmd.UseLine()
+	// which omits the root command name for standalone (parentless) commands.
+	fmt.Fprintf(w, "  opm %s [flags]\n", cmd.Use)
+
+	allFlags := &pflag.FlagSet{}
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if !f.Hidden {
+			allFlags.AddFlag(f)
+		}
+	})
+	cmd.InheritedFlags().VisitAll(func(f *pflag.Flag) {
+		if !f.Hidden && allFlags.Lookup(f.Name) == nil {
+			allFlags.AddFlag(f)
+		}
+	})
+
+	if allFlags.HasFlags() {
+		fmt.Fprintln(w)
+		HelpSection(w, "Flags:")
+		allFlags.VisitAll(func(f *pflag.Flag) {
+			if f.Shorthand != "" {
+				fmt.Fprintln(w, HelpFlag("-"+f.Shorthand+", --"+f.Name, f.Usage))
+			} else {
+				fmt.Fprintln(w, HelpFlag("--"+f.Name, f.Usage))
+			}
+		})
+	}
 }
