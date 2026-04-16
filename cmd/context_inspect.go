@@ -1,0 +1,44 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/opm-cli/opm/internal/output"
+	"github.com/spf13/cobra"
+)
+
+var inspectCmd = &cobra.Command{
+	Use:               "inspect <name>",
+	Short:             "Show detailed information about a profile",
+	Args:              cobra.ExactArgs(1),
+	PersistentPreRunE: managedGuard,
+	ValidArgsFunction: profileNameCompletion,
+	SilenceUsage:      true,
+	RunE:              runContextInspect,
+}
+
+func init() {
+	contextCmd.AddCommand(inspectCmd)
+}
+
+func runContextInspect(cmd *cobra.Command, args []string) error {
+	name := args[0]
+	s := newStore()
+
+	profilePath, err := s.GetProfile(name)
+	if err != nil {
+		return err
+	}
+
+	active, _ := s.ActiveProfile()
+	isActive := active == name
+
+	entries, err := os.ReadDir(profilePath)
+	if err != nil {
+		return fmt.Errorf("read profile contents: %w", err)
+	}
+
+	output.InspectProfile(cmd.OutOrStdout(), name, profilePath, isActive, entries)
+	return nil
+}
