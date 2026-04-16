@@ -6,11 +6,13 @@ import (
 )
 
 func homeDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = os.Getenv("HOME")
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		return home
 	}
-	return home
+	if home := os.Getenv("HOME"); home != "" {
+		return home
+	}
+	panic("opm: cannot determine home directory: $HOME is not set and os.UserHomeDir() failed")
 }
 
 // OpmDir returns ~/.config/opm — opm's own state directory.
