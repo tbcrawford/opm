@@ -79,3 +79,34 @@ func ProfileTable(w io.Writer, profiles []store.Profile) {
 		}
 	}
 }
+
+// InspectProfile writes the inspect block: name header, path row, contents list.
+func InspectProfile(w io.Writer, name, path string, active bool, entries []os.DirEntry) {
+	// Header: name + optional active badge
+	if active {
+		fmt.Fprintf(w, "%s %s\n", blue.Sprint(name), green.Sprint("● active"))
+	} else {
+		fmt.Fprintln(w, blue.Sprint(name))
+	}
+	fmt.Fprintln(w)
+
+	// Path row
+	fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", "Path"), ShortenHome(path))
+
+	// Contents rows
+	if len(entries) == 0 {
+		fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", "Contents"), dim.Sprint("(empty)"))
+		return
+	}
+	for i, e := range entries {
+		entryName := e.Name()
+		if e.IsDir() {
+			entryName += "/"
+		}
+		label := ""
+		if i == 0 {
+			label = "Contents"
+		}
+		fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", label), entryName)
+	}
+}

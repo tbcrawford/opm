@@ -85,3 +85,22 @@ func TestProfileTable_Empty(t *testing.T) {
 	output.ProfileTable(&buf, nil)
 	assert.Equal(t, "", buf.String())
 }
+
+func TestInspectProfile_Active(t *testing.T) {
+	var buf bytes.Buffer
+	entries := []os.DirEntry{}
+	output.InspectProfile(&buf, "work", "/home/user/.config/opm/profiles/work", true, entries)
+	got := buf.String()
+	assert.Contains(t, got, "work")
+	assert.Contains(t, got, "● active")
+	assert.Contains(t, got, "Contents")
+	assert.Contains(t, got, "(empty)")
+}
+
+func TestInspectProfile_Inactive(t *testing.T) {
+	var buf bytes.Buffer
+	output.InspectProfile(&buf, "personal", "/home/user/.config/opm/profiles/personal", false, nil)
+	got := buf.String()
+	assert.Contains(t, got, "personal")
+	assert.NotContains(t, got, "● active")
+}
