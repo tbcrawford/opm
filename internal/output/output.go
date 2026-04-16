@@ -4,6 +4,7 @@
 package output
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -239,12 +240,18 @@ func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
 	if allFlags.HasFlags() {
 		fmt.Fprintln(w)
 		HelpSection(w, "Flags:")
+		var buf bytes.Buffer
+		tw := tabwriter.NewWriter(&buf, 0, 0, 4, ' ', 0)
 		allFlags.VisitAll(func(f *pflag.Flag) {
+			var name string
 			if f.Shorthand != "" {
-				fmt.Fprintln(w, HelpFlag("-"+f.Shorthand+", --"+f.Name, f.Usage))
+				name = flagColor.Sprintf("-%s, --%s", f.Shorthand, f.Name)
 			} else {
-				fmt.Fprintln(w, HelpFlag("--"+f.Name, f.Usage))
+				name = flagColor.Sprintf("--%s", f.Name)
 			}
+			fmt.Fprintf(tw, "  %s\t%s\n", name, f.Usage)
 		})
+		_ = tw.Flush()
+		fmt.Fprint(w, buf.String())
 	}
 }
