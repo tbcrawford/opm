@@ -12,14 +12,14 @@ var createCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: managedGuard,
 	SilenceUsage:      true,
-	RunE:              runContextCreate,
+	RunE:              runCreate,
 }
 
 func init() {
-	contextCmd.AddCommand(createCmd)
+	rootCmd.AddCommand(createCmd)
 }
 
-func runContextCreate(cmd *cobra.Command, args []string) error {
+func runCreate(cmd *cobra.Command, args []string) error {
 	name := args[0]
 	s := newStore()
 	if err := s.CreateProfile(name); err != nil {

@@ -16,14 +16,14 @@ var useCmd = &cobra.Command{
 	PersistentPreRunE: managedGuard,
 	ValidArgsFunction: profileNameCompletion,
 	SilenceUsage:      true,
-	RunE:              runContextUse,
+	RunE:              runUse,
 }
 
 func init() {
-	contextCmd.AddCommand(useCmd)
+	rootCmd.AddCommand(useCmd)
 }
 
-func runContextUse(cmd *cobra.Command, args []string) error {
+func runUse(cmd *cobra.Command, args []string) error {
 	name := args[0]
 	s := newStore()
 
