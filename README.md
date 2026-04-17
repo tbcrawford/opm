@@ -27,7 +27,7 @@ brew install tbcrawford/tap/opm
 ✓ Created profile experiments from work
   ~/.config/opm/profiles/experiments/
 
-# switch instantly
+# switch profiles, then reload opencode
 ❯ opm use work
 ✓ default → work
   ~/.config/opencode → profiles/work
@@ -46,7 +46,7 @@ brew install tbcrawford/tap/opm
 
 ### Config files shouldn't slow you down.
 
-You use OpenCode for work with strict MCPs and a locked model. Then for personal projects with different tools and a relaxed `AGENTS.md`. Then to experiment with new tooling without touching what's working. Each switch means editing files by hand — tedious, error-prone, and risky.
+You use OpenCode for work with strict MCPs and a locked model, for personal projects with different tools and a relaxed `AGENTS.md`, and for experimenting with new tooling you don't want near a working setup. Every context switch means editing files by hand — tedious, error-prone, and one bad paste away from breaking something.
 
 opm treats each context as a first-class **profile**: a full, isolated `~/.config/opencode/` directory. Switching is a single symlink swap.
 
@@ -54,9 +54,11 @@ opm treats each context as a first-class **profile**: a full, isolated `~/.confi
 
 **Completely isolated** — Each profile has its own MCPs, agents, models, plugins, and `AGENTS.md`. Nothing bleeds between contexts.
 
-**Atomic switching** — The symlink swap is atomic. There is no window where `~/.config/opencode` is absent or in a bad state.
+**Atomic switching** — The symlink swap is atomic. There is no window where `~/.config/opencode` is absent or in a bad state. Reload OpenCode after switching to pick up the new profile.
 
-**Safe to experiment** — Clone a working profile, break things freely. Your production config is never touched. Switch back to restore it instantly.
+**Your workflow, completely unchanged** — opm works transparently beneath OpenCode. Your active profile lives at `~/.config/opencode` — the same path OpenCode has always used. Edit configs, install MCPs, add agents — everything works exactly as it always has. Any tool that writes to `~/.config/opencode` is writing directly into your active profile. No special paths, no wrapper commands.
+
+**Safe to experiment** — Clone a working profile, break things freely. Your production config is never touched. Switch back to restore it.
 
 <br>
 
@@ -68,7 +70,7 @@ opm treats each context as a first-class **profile**: a full, isolated `~/.confi
 
 | Command | Description |
 |---|---|
-| `opm init` | Migrate your existing config into opm management. Non-destructive. |
+| `opm init [--as <name>]` | Migrate your existing config into opm management. Non-destructive. The initial profile is named `default` unless overridden with `--as`. |
 | `opm create <name>` | Create a new empty profile. Use `--from` to clone an existing profile as the starting point. |
 | `opm use <name>` | Switch the active profile via atomic symlink swap. Restart OpenCode to pick up the new profile. |
 | `opm list [-l]` | List all profiles. Active marked `●`. Dangling marked `!`. Pass `-l` to include paths. |
@@ -115,7 +117,7 @@ go install github.com/tbcrawford/opm@latest
 
 ## How it works
 
-`opm init` moves your existing `~/.config/opencode/` into a named profile directory and replaces it with a symlink. From that point on, `opm use <name>` atomically repoints the symlink to a different profile:
+`opm init` moves your existing `~/.config/opencode/` into a named profile directory — `default` by default, or a name of your choosing with `--as` — and replaces it with a symlink. From that point on, `opm use <name>` atomically repoints the symlink to a different profile:
 
 ```
 ~/.config/opencode  →  ~/.config/opm/profiles/work/

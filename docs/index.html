@@ -230,7 +230,7 @@ nav {
   gap: 8px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
-  background: rgba(255,255,255,0.02);
+  background: #12122a;
 }
 .term-dot { width: 10px; height: 10px; border-radius: 50%; }
 .term-dot.r { background: #ff5f57; }
@@ -249,6 +249,7 @@ nav {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 13px;
   line-height: 1.9;
+  background: #0a0a1c;
 }
 .term-comment { color: var(--text-dim); }
 .term-ps { color: var(--indigo-light); }
@@ -396,6 +397,7 @@ nav {
   transition: border-color 0.2s;
 }
 .feature-card:hover { border-color: rgba(99,102,241,0.3); }
+.feature-card--wide { grid-column: 1 / -1; }
 
 .feature-icon {
   width: 36px; height: 36px;
@@ -555,10 +557,10 @@ footer a:hover { color: var(--text-muted); }
       OpenCode Profile Manager
     </div>
     <h1 class="hero-title">
-      Switch contexts.<br><em>Instantly.</em>
+      Switch contexts.<br><em>One command.</em>
     </h1>
     <p class="hero-sub">
-      Manage multiple isolated OpenCode environments — MCPs, agents, models, plugins — and switch between them with a single command.
+      Manage multiple isolated OpenCode environments — MCPs, agents, models, plugins — and switch between them with a single command. Reload OpenCode and your new profile is live.
     </p>
     <div class="hero-actions">
       <a href="#install" class="btn-primary">
@@ -583,9 +585,9 @@ footer a:hover { color: var(--text-muted); }
         <div><span class="term-ps">$</span> <span class="term-cmd">opm create work</span></div>
         <div><span class="term-out">✓ Created profile "work"</span></div>
         <div class="term-spacer"></div>
-        <div><span class="term-comment"># switch — takes effect immediately</span></div>
+        <div><span class="term-comment"># switch profiles, then reload opencode</span></div>
         <div><span class="term-ps">$</span> <span class="term-cmd">opm use work</span></div>
-        <div><span class="term-active">✓ Switched to context "work"</span></div>
+        <div><span class="term-active">✓ Switched to profile "work"</span></div>
       </div>
     </div>
   </div>
@@ -618,7 +620,7 @@ footer a:hover { color: var(--text-muted); }
     <div class="step">
       <div class="step-num">03</div>
       <div class="step-title">Switch</div>
-      <div class="step-desc">Swap to your new profile instantly. No restarts required.</div>
+      <div class="step-desc">Run <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--indigo-light)">opm use work</code>, then reload OpenCode. Your new environment — MCPs, agents, everything — is ready.</div>
       <div class="step-code">opm use work</div>
     </div>
   </div>
@@ -631,8 +633,8 @@ footer a:hover { color: var(--text-muted); }
   <div class="features-grid">
     <div class="feature-card">
       <div class="feature-icon">⚡</div>
-      <div class="feature-title">Instant switching</div>
-      <div class="feature-desc">One command swaps the active profile via directory-level symlink. No restarts. Takes effect immediately.</div>
+      <div class="feature-title">One command to switch</div>
+      <div class="feature-desc">Run <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--indigo-light)">opm use &lt;name&gt;</code> and reload OpenCode. The symlink swaps atomically — there is no window where your config is missing or in a broken state.</div>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🔒</div>
@@ -642,12 +644,17 @@ footer a:hover { color: var(--text-muted); }
     <div class="feature-card">
       <div class="feature-icon">🔀</div>
       <div class="feature-title">Non-destructive init</div>
-      <div class="feature-desc">opm init migrates your current config safely. Your existing setup becomes the "default" profile, untouched.</div>
+      <div class="feature-desc">opm init migrates your current config safely into a named profile — <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--indigo-light)">default</code> by default, or whatever you choose with <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--indigo-light)">--as</code>. Nothing is deleted or overwritten.</div>
     </div>
     <div class="feature-card">
       <div class="feature-icon">🐳</div>
       <div class="feature-title">docker context UX</div>
       <div class="feature-desc">Familiar command surface if you've used docker context. Create, use, ls, inspect, rm — it all maps naturally.</div>
+    </div>
+    <div class="feature-card feature-card--wide">
+      <div class="feature-icon">🔄</div>
+      <div class="feature-title">Your workflow, completely unchanged</div>
+      <div class="feature-desc">opm works transparently beneath OpenCode. Your active profile lives at <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--indigo-light)">~/.config/opencode</code> — the exact same path OpenCode has always used. Edit configs, install MCPs, add agents — everything works exactly as it always has. Tools that write to <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--indigo-light)">~/.config/opencode</code> are writing directly into your active profile. No special paths, no wrapper commands, no migration steps for every change.</div>
     </div>
   </div>
 </section>
@@ -662,8 +669,8 @@ footer a:hover { color: var(--text-muted); }
       <div class="cmd-cell header-cell">Description</div>
     </div>
     <div class="cmd-row">
-      <div class="cmd-cell monospace">opm init</div>
-      <div class="cmd-cell desc">Migrate existing config into opm. Safe to run on an existing setup.</div>
+      <div class="cmd-cell monospace">opm init [--as &lt;name&gt;]</div>
+      <div class="cmd-cell desc">Migrate existing config into opm. Safe to run on an existing setup. Names the initial profile <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">default</code> unless overridden with <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--as</code>.</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm use &lt;name&gt;</div>
