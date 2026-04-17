@@ -3,15 +3,34 @@
 
 **opm — OpenCode Profile Manager**
 
-A Go CLI tool that manages multiple OpenCode configurations by symlinking `~/.config/opencode` to named profile directories. Users switch between completely isolated OpenCode environments (different MCPs, plugins, agents, models, AGENTS.md) with a single command, using a UX modeled on `docker context`.
+A Go CLI tool that manages multiple OpenCode configurations by symlinking `~/.config/opencode` to named profile directories. Users switch between completely isolated OpenCode environments (different MCPs, plugins, agents, models, AGENTS.md) with a single command.
 
-**Core Value:** Switching OpenCode profiles should be one command — `opm context use <name>` — and take effect immediately without restarting anything.
+**Core Value:** Switching OpenCode profiles should be one command — `opm use <name>` — and take effect immediately without restarting anything.
+
+### Command API
+
+All subcommands are flat (no `context` grouping):
+
+| Command | Description |
+|---------|-------------|
+| `opm init` | Initialize opm and migrate existing OpenCode config |
+| `opm use <name>` | Switch to a profile |
+| `opm create <name>` | Create a new profile |
+| `opm list` | List all profiles |
+| `opm show` | Print the name of the currently active profile |
+| `opm inspect <name>` | Show detailed information about a profile |
+| `opm rename <old> <new>` | Rename a profile |
+| `opm copy <src> <dst>` | Copy a profile to a new name |
+| `opm remove <name> [name...]` | Remove one or more profiles |
+| `opm path <name>` | Print the filesystem path to a profile directory |
+| `opm reset` | Restore `~/.config/opencode` to a plain directory |
+| `opm doctor` | Check opm installation health |
 
 ### Constraints
 
 - **Language**: Go — single binary, fast, no runtime dependencies
 - **Mechanism**: Directory-level symlink (`~/.config/opencode` → profile dir), not file-level
-- **UX**: Mirror `docker context` command surface (create, use, ls, inspect, rm)
+- **UX**: Flat subcommand surface (not `docker context`-style grouping)
 - **Compatibility**: Must not break existing OpenCode setup — `opm init` migrates current config non-destructively
 <!-- GSD:project-end -->
 

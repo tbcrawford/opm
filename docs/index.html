@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>opm — Merged Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #07070f;
+  --bg2: #0d0d1a;
+  --border: rgba(255,255,255,0.07);
+  --indigo: #6366f1;
+  --indigo-light: #818cf8;
+  --indigo-muted: rgba(99,102,241,0.15);
+  --text: #e8e8f0;
+  --text-muted: rgba(255,255,255,0.58);
+  --text-dim: rgba(255,255,255,0.35);
+  --accent: #f97316;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  height: 60px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,7,15,0.85);
+  backdrop-filter: blur(16px);
+}
+
+.nav-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-logo-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--indigo);
+  box-shadow: 0 0 8px var(--indigo);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+.nav-links a:hover { color: var(--text); }
+
+.nav-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 18px;
+  background: var(--indigo);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.nav-cta:hover { opacity: 0.88; color: #fff; }
+
+/* HERO */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  overflow: hidden;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 100%);
+}
+
+.hero-glow {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(99,102,241,0.18) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  max-width: 760px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(99,102,241,0.35);
+  background: rgba(99,102,241,0.1);
+  border-radius: 24px;
+  padding: 5px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a5b4fc;
+  margin-bottom: 36px;
+  letter-spacing: 0.3px;
+}
+.hero-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #818cf8;
+  box-shadow: 0 0 6px #818cf8;
+}
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(52px, 8vw, 88px);
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: -2px;
+  color: #fff;
+  margin-bottom: 24px;
+}
+.hero-title em {
+  font-style: italic;
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: 18px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  max-width: 520px;
+  margin: 0 auto 44px;
+  font-weight: 400;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 56px;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  padding: 13px 28px;
+  background: var(--indigo);
+  color: #fff;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.15s;
+  display: flex; align-items: center; gap: 8px;
+}
+.btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.btn-secondary {
+  padding: 13px 24px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-secondary:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+.hero-terminal {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: left;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.term-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+.term-dot { width: 10px; height: 10px; border-radius: 50%; }
+.term-dot.r { background: #ff5f57; }
+.term-dot.y { background: #febc2e; }
+.term-dot.g { background: #28c840; }
+.term-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.term-body {
+  padding: 20px 22px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  line-height: 1.9;
+}
+.term-comment { color: var(--text-dim); }
+.term-ps { color: var(--indigo-light); }
+.term-cmd { color: #e8e8f0; }
+.term-out { color: var(--text-muted); padding-left: 4px; }
+.term-active { color: #86efac; }
+.term-spacer { height: 6px; }
+
+/* QUICKSTART */
+.quickstart {
+  padding: 100px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.section-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--indigo-light);
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(36px, 5vw, 52px);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -1.5px;
+  margin-bottom: 60px;
+  line-height: 1.05;
+}
+.section-title em { font-style: italic; color: var(--text-muted); }
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.step {
+  background: var(--bg2);
+  padding: 36px 32px;
+  position: relative;
+  transition: background 0.2s;
+}
+.step:hover { background: rgba(99,102,241,0.05); }
+
+.step-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 48px;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--text-dim);
+  line-height: 1;
+  margin-bottom: 20px;
+}
+
+.step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.step-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.step-code {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--indigo-light);
+}
+
+/* FEATURES */
+.features {
+  padding: 80px 24px 100px;
+  max-width: 900px;
+  margin: 0 auto;
+  border-top: 1px solid var(--border);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 60px;
+}
+
+.feature-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+  background: var(--bg2);
+  transition: border-color 0.2s;
+}
+.feature-card:hover { border-color: rgba(99,102,241,0.3); }
+
+.feature-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--indigo-muted);
+  border: 1px solid rgba(99,102,241,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.feature-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.feature-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+/* COMMANDS */
+.commands {
+  padding: 80px 24px 100px;
+  max-width: 900px;
+  margin: 0 auto;
+  border-top: 1px solid var(--border);
+}
+
+.cmd-table {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 48px;
+}
+
+.cmd-row {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.cmd-row:last-child { border-bottom: none; }
+.cmd-row:hover { background: rgba(255,255,255,0.02); }
+.cmd-row.header { background: rgba(255,255,255,0.03); }
+
+.cmd-cell {
+  padding: 16px 24px;
+  font-size: 13px;
+  border-right: 1px solid var(--border);
+}
+.cmd-cell:last-child { border-right: none; }
+.cmd-cell.monospace {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--indigo-light);
+  font-size: 12px;
+}
+.cmd-cell.header-cell {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.cmd-cell.desc { color: var(--text-muted); }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+footer a { color: var(--text-dim); text-decoration: none; }
+footer a:hover { color: var(--text-muted); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-dot"></div>
+    opm
+  </div>
+  <div class="nav-links">
+    <a href="#">Docs</a>
+    <a href="#">Commands</a>
+    <a href="#">Install</a>
+    <a href="#" class="nav-cta">View on GitHub →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      OpenCode Profile Manager
+    </div>
+    <h1 class="hero-title">
+      Switch contexts.<br><em>Instantly.</em>
+    </h1>
+    <p class="hero-sub">
+      Manage multiple isolated OpenCode environments — MCPs, agents, models, plugins — and switch between them with a single command.
+    </p>
+    <div class="hero-actions">
+      <a href="#" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+        Get Started
+      </a>
+      <a href="#" class="btn-secondary">View on GitHub</a>
+    </div>
+    <div class="hero-terminal">
+      <div class="term-titlebar">
+        <div class="term-dot r"></div>
+        <div class="term-dot y"></div>
+        <div class="term-dot g"></div>
+        <div class="term-title">opm — zsh</div>
+      </div>
+      <div class="term-body">
+        <div><span class="term-comment"># migrate your existing config</span></div>
+        <div><span class="term-ps">$</span> <span class="term-cmd">opm init</span></div>
+        <div><span class="term-out">✓ Migrated ~/.config/opencode → profile "default"</span></div>
+        <div class="term-spacer"></div>
+        <div><span class="term-comment"># create a new isolated profile</span></div>
+        <div><span class="term-ps">$</span> <span class="term-cmd">opm create work</span></div>
+        <div><span class="term-out">✓ Created profile "work"</span></div>
+        <div class="term-spacer"></div>
+        <div><span class="term-comment"># switch — takes effect immediately</span></div>
+        <div><span class="term-ps">$</span> <span class="term-cmd">opm use work</span></div>
+        <div><span class="term-active">✓ Switched to context "work"</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICKSTART -->
+<section class="quickstart">
+  <div class="section-eyebrow">Quick Start</div>
+  <h2 class="section-title">Up and running<br><em>in three steps.</em></h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Install</div>
+      <div class="step-desc">One line via Homebrew. Single binary, no runtime dependencies.</div>
+      <div class="step-code">brew install opm</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Initialize</div>
+      <div class="step-desc">Migrate your existing OpenCode config non-destructively into a named profile.</div>
+      <div class="step-code">opm init</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Switch</div>
+      <div class="step-desc">Create new profiles and switch between them instantly.</div>
+      <div class="step-code">opm use work</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-eyebrow">Why opm</div>
+  <h2 class="section-title">Fully isolated.<br><em>Zero configuration.</em></h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Instant switching</div>
+      <div class="feature-desc">One command swaps the active profile via directory-level symlink. No restarts. Takes effect immediately.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">Complete isolation</div>
+      <div class="feature-desc">Each profile is an independent directory — separate MCPs, agents, plugins, AGENTS.md, and model configs.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔀</div>
+      <div class="feature-title">Non-destructive init</div>
+      <div class="feature-desc">opm init migrates your current config safely. Your existing setup becomes the "default" profile, untouched.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🐳</div>
+      <div class="feature-title">docker context UX</div>
+      <div class="feature-desc">Familiar command surface if you've used docker context. Create, use, ls, inspect, rm — it all maps naturally.</div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMANDS -->
+<section class="commands">
+  <div class="section-eyebrow">Reference</div>
+  <h2 class="section-title">Commands</h2>
+  <div class="cmd-table">
+    <div class="cmd-row header">
+      <div class="cmd-cell header-cell">Command</div>
+      <div class="cmd-cell header-cell">Description</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm init</div>
+      <div class="cmd-cell desc">Migrate existing config into opm. Safe to run on an existing setup.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm use &lt;name&gt;</div>
+      <div class="cmd-cell desc">Switch to a profile.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm create &lt;name&gt;</div>
+      <div class="cmd-cell desc">Create a new empty profile.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm list</div>
+      <div class="cmd-cell desc">List all profiles, showing which is currently active.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm show</div>
+      <div class="cmd-cell desc">Print the name of the currently active profile.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm inspect &lt;name&gt;</div>
+      <div class="cmd-cell desc">Show detailed information about a profile.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm rename &lt;old&gt; &lt;new&gt;</div>
+      <div class="cmd-cell desc">Rename an existing profile.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm copy &lt;src&gt; &lt;dst&gt;</div>
+      <div class="cmd-cell desc">Copy a profile to a new name.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm remove &lt;name&gt; [name...]</div>
+      <div class="cmd-cell desc">Remove one or more profiles.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm path &lt;name&gt;</div>
+      <div class="cmd-cell desc">Print the filesystem path to a profile directory.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm reset</div>
+      <div class="cmd-cell desc">Restore ~/.config/opencode to a plain directory.</div>
+    </div>
+    <div class="cmd-row">
+      <div class="cmd-cell monospace">opm doctor</div>
+      <div class="cmd-cell desc">Check opm installation health.</div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<footer>
+  <div>Built with Go · MIT License</div>
+  <div style="display:flex;gap:24px">
+    <a href="#">GitHub</a>
+    <a href="#">Docs</a>
+    <a href="#">Releases</a>
+  </div>
+</footer>
+
+</body>
+</html>
