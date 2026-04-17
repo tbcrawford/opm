@@ -81,6 +81,10 @@ run *args:
 install:
     go install .
 
+# Remove the installed binary from $GOPATH/bin
+uninstall:
+    rm -f `go env GOPATH`/bin/{{ binary }}
+
 # Watch for changes and re-run tests (requires watchexec)
 watch:
     watchexec --exts go -- go test ./...
