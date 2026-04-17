@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/tbcrawford/opm/internal/store"
 	"github.com/spf13/cobra"
+	"github.com/tbcrawford/opm/internal/store"
 )
 
 var pathCmd = &cobra.Command{

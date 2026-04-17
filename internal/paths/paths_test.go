@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/stretchr/testify/assert"
+	"github.com/tbcrawford/opm/internal/paths"
 )
 
 func TestOpmDir_IsAbsolute(t *testing.T) {

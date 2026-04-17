@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
 	"github.com/tbcrawford/opm/internal/store"
-	"github.com/spf13/cobra"
 )
 
 var inspectCmd = &cobra.Command{

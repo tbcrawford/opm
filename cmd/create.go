@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
 	"github.com/tbcrawford/opm/internal/paths"
-	"github.com/spf13/cobra"
 )
 
 var createFrom string

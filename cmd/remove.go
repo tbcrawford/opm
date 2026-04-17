@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
 	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/tbcrawford/opm/internal/store"
 	"github.com/tbcrawford/opm/internal/symlink"
-	"github.com/spf13/cobra"
 )
 
 var removeForce bool
