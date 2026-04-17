@@ -1,0 +1,13 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck      # unchecked error return values
+    - govet         # go vet analysis passes
+    - ineffassign   # assignments whose value is never used
+    - staticcheck   # comprehensive static analysis (stylecheck, gosimple, unused checks)
+    - unused        # unused exported and unexported identifiers
+
+issues:
+  max-same-issues: 0   # report all occurrences, not just the first N

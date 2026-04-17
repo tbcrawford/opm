@@ -49,7 +49,11 @@ cover:
 # Lint and vet the codebase (like Gradle's `check`)
 check:
     go vet ./...
-    @which golangci-lint > /dev/null && golangci-lint run || echo "golangci-lint not installed — skipping (go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)"
+    golangci-lint run
+
+# Format Go source files
+fmt:
+    gofmt -w .
 
 # Run check + test (like Gradle's `verify`)
 verify: check test
