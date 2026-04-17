@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: [stable]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,14 +20,29 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go }}
+          go-version: stable
           cache: true
 
       - name: Test
-        run: go test ./... -v -count=1
-
-      - name: Vet
-        run: go vet ./...
+        run: go test -count=1 ./...
 
       - name: Build
         run: go build ./...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false  # golangci-lint-action manages its own cache
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
