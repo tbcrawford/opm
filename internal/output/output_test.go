@@ -9,10 +9,11 @@ import (
 	"text/tabwriter"
 
 	"github.com/fatih/color"
-	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/store"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/tbcrawford/opm/internal/output"
+	"github.com/tbcrawford/opm/internal/store"
 )
 
 func TestMain(m *testing.M) {
@@ -132,7 +133,7 @@ func TestDoctorRow_OK(t *testing.T) {
 	var buf bytes.Buffer
 	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
 	output.DoctorRow(tw, output.StatusOK, "everything fine")
-	tw.Flush()
+	require.NoError(t, tw.Flush())
 	assert.Contains(t, buf.String(), "✓")
 	assert.Contains(t, buf.String(), "everything fine")
 }
@@ -141,7 +142,7 @@ func TestDoctorRow_Fail(t *testing.T) {
 	var buf bytes.Buffer
 	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
 	output.DoctorRow(tw, output.StatusFail, "profile missing")
-	tw.Flush()
+	require.NoError(t, tw.Flush())
 	assert.Contains(t, buf.String(), "✗")
 	assert.Contains(t, buf.String(), "profile missing")
 }
@@ -150,7 +151,7 @@ func TestDoctorRow_Warn(t *testing.T) {
 	var buf bytes.Buffer
 	tw := tabwriter.NewWriter(&buf, 0, 0, 2, ' ', 0)
 	output.DoctorRow(tw, output.StatusWarn, "symlink is unusual")
-	tw.Flush()
+	require.NoError(t, tw.Flush())
 	assert.Contains(t, buf.String(), "⚠")
 	assert.Contains(t, buf.String(), "symlink is unusual")
 }

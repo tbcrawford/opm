@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"text/tabwriter"
 
-	"github.com/tbcrawford/opm/internal/output"
 	"github.com/spf13/cobra"
+	"github.com/tbcrawford/opm/internal/output"
 )
 
 // registerHelp sets a custom help function on the root command.
@@ -75,13 +75,13 @@ func printRootHelp(root *cobra.Command) {
 			output.HelpCommand(tw, e.name, e.short, e.alias)
 		}
 		_ = tw.Flush()
-		fmt.Fprint(w, buf.String())
+		_, _ = fmt.Fprint(w, buf.String())
 		if i < len(sections)-1 {
-			fmt.Fprintln(w)
+			_, _ = fmt.Fprintln(w)
 		}
 	}
 
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	output.HelpSection(w, "Flags:")
 	output.HelpFlagTable(w, [][2]string{
 		{"--version", "Print version and exit"},

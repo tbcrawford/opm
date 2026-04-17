@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
 	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/tbcrawford/opm/internal/symlink"
-	"github.com/spf13/cobra"
 )
 
 var doctorCmd = &cobra.Command{
@@ -39,16 +39,16 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		output.DoctorRow(out, output.StatusFail, fmt.Sprintf("~/.config/opencode: %v", err))
 		failures++
-		fmt.Fprintln(out)
+		_, _ = fmt.Fprintln(out)
 		output.DoctorSummary(out, warnings, failures)
-		return silentErr
+		return errSilent
 	}
 	if !managed {
 		output.DoctorRow(out, output.StatusFail, "~/.config/opencode is not an opm-managed symlink — run 'opm init'")
 		failures++
-		fmt.Fprintln(out)
+		_, _ = fmt.Fprintln(out)
 		output.DoctorSummary(out, warnings, failures)
-		return silentErr
+		return errSilent
 	}
 
 	st, err := symlink.Inspect(opencodeDir)
@@ -64,7 +64,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		output.DoctorRow(out, output.StatusOK,
 			fmt.Sprintf("~/.config/opencode → %s", output.ProfileName(activeName)))
 	}
-	fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out)
 
 	// ── Profiles ─────────────────────────────────────────────────────────────
 	output.DoctorSection(out, "Profiles")
@@ -97,18 +97,18 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	active, actErr := s.ActiveProfile()
 	mismatch := curErr == nil && actErr == nil && current != "" && active != "" && current != active
 	if mismatch {
-		fmt.Fprintln(out)
+		_, _ = fmt.Fprintln(out)
 		output.DoctorSection(out, "Consistency")
 		output.DoctorRow(out, output.StatusWarn,
 			fmt.Sprintf("current file says %q but active symlink points to %q", current, active))
 		warnings++
 	}
 
-	fmt.Fprintln(out)
+	_, _ = fmt.Fprintln(out)
 	output.DoctorSummary(out, warnings, failures)
 
 	if failures > 0 {
-		return silentErr
+		return errSilent
 	}
 	return nil
 }

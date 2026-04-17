@@ -41,11 +41,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	if st.IsSymlink && strings.HasPrefix(st.Target, profilesDir) {
 		activeName := filepath.Base(st.Target)
-		return fmt.Errorf("Already initialized (active: %s)", activeName)
+		return fmt.Errorf("already initialized (active: %s)", activeName)
 	}
 
 	if st.IsSymlink && !strings.HasPrefix(st.Target, profilesDir) {
-		return fmt.Errorf("~/.config/opencode is an unrecognized symlink\n\n  Back it up and remove it, then run 'opm init' again.")
+		return fmt.Errorf("~/.config/opencode is an unrecognized symlink\n\n  Back it up and remove it, then run 'opm init' again")
 	}
 
 	if _, statErr := os.Lstat(profileDir); statErr == nil {
@@ -65,7 +65,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		s := newStore()
 		managed, mErr := s.IsOpmManaged()
 		if mErr == nil && managed {
-			return fmt.Errorf("Already initialized (active: %s)", profileName)
+			return fmt.Errorf("already initialized (active: %s)", profileName)
 		}
 		return fmt.Errorf(
 			"partial initialization detected: profiles/%s exists but ~/.config/opencode is not managed by opm\n\n"+

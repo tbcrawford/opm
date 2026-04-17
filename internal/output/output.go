@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/tbcrawford/opm/internal/store"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/tbcrawford/opm/internal/store"
 )
 
 var (
@@ -32,18 +32,18 @@ var (
 // Success prints a green ✓ line followed by optional dim detail lines.
 // Used by all state-changing commands on success.
 func Success(w io.Writer, msg string, detail ...string) {
-	fmt.Fprintf(w, "%s %s\n", green.Sprint("✓"), msg)
+	_, _ = fmt.Fprintf(w, "%s %s\n", green.Sprint("✓"), msg)
 	for _, d := range detail {
-		fmt.Fprintf(w, "%s\n", dim.Sprintf("  %s", d))
+		_, _ = fmt.Fprintf(w, "%s\n", dim.Sprintf("  %s", d))
 	}
 }
 
 // Failure prints a red ✗ line followed by optional dim detail lines.
 // Used for non-fatal in-command failure messages printed before returning an error.
 func Failure(w io.Writer, msg string, detail ...string) {
-	fmt.Fprintf(w, "%s %s\n", red.Sprint("✗"), msg)
+	_, _ = fmt.Fprintf(w, "%s %s\n", red.Sprint("✗"), msg)
 	for _, d := range detail {
-		fmt.Fprintf(w, "%s\n", dim.Sprintf("  %s", d))
+		_, _ = fmt.Fprintf(w, "%s\n", dim.Sprintf("  %s", d))
 	}
 }
 
@@ -51,9 +51,9 @@ func Failure(w io.Writer, msg string, detail ...string) {
 // Used by Execute() to format all command errors uniformly.
 func Error(w io.Writer, msg string) {
 	parts := strings.SplitN(msg, "\n", 2)
-	fmt.Fprintf(w, "%s %s\n", red.Sprint("✗"), parts[0])
+	_, _ = fmt.Fprintf(w, "%s %s\n", red.Sprint("✗"), parts[0])
 	if len(parts) > 1 && parts[1] != "" {
-		fmt.Fprintln(w, dim.Sprint(parts[1]))
+		_, _ = fmt.Fprintln(w, dim.Sprint(parts[1]))
 	}
 }
 
@@ -79,11 +79,11 @@ func ProfileTable(w io.Writer, profiles []store.Profile) {
 	for _, p := range profiles {
 		switch {
 		case p.Dangling:
-			fmt.Fprintf(w, "%s %s %s\n", red.Sprint("✗"), red.Sprint(p.Name), dim.Sprint("(missing)"))
+			_, _ = fmt.Fprintf(w, "%s %s %s\n", red.Sprint("✗"), red.Sprint(p.Name), dim.Sprint("(missing)"))
 		case p.Active:
-			fmt.Fprintf(w, "%s %s\n", green.Sprint("●"), blue.Sprint(p.Name))
+			_, _ = fmt.Fprintf(w, "%s %s\n", green.Sprint("●"), blue.Sprint(p.Name))
 		default:
-			fmt.Fprintf(w, "%s\n", dim.Sprintf("○ %s", p.Name))
+			_, _ = fmt.Fprintf(w, "%s\n", dim.Sprintf("○ %s", p.Name))
 		}
 	}
 }
@@ -103,11 +103,11 @@ func ProfileTableLong(w io.Writer, profiles []store.Profile) {
 		pad := strings.Repeat(" ", maxLen-len(p.Name))
 		switch {
 		case p.Dangling:
-			fmt.Fprintf(w, "%s %s%s    %s\n", red.Sprint("✗"), red.Sprint(p.Name), pad, dim.Sprint("(missing) "+p.Path))
+			_, _ = fmt.Fprintf(w, "%s %s%s    %s\n", red.Sprint("✗"), red.Sprint(p.Name), pad, dim.Sprint("(missing) "+p.Path))
 		case p.Active:
-			fmt.Fprintf(w, "%s %s%s    %s\n", green.Sprint("●"), blue.Sprint(p.Name), pad, dim.Sprint(ShortenHome(p.Path)))
+			_, _ = fmt.Fprintf(w, "%s %s%s    %s\n", green.Sprint("●"), blue.Sprint(p.Name), pad, dim.Sprint(ShortenHome(p.Path)))
 		default:
-			fmt.Fprintf(w, "%s %s%s    %s\n", dim.Sprint("○"), dim.Sprint(p.Name), pad, dim.Sprint(ShortenHome(p.Path)))
+			_, _ = fmt.Fprintf(w, "%s %s%s    %s\n", dim.Sprint("○"), dim.Sprint(p.Name), pad, dim.Sprint(ShortenHome(p.Path)))
 		}
 	}
 }
@@ -116,18 +116,18 @@ func ProfileTableLong(w io.Writer, profiles []store.Profile) {
 func InspectProfile(w io.Writer, name, path string, active bool, entries []os.DirEntry) {
 	// Header: name + optional active badge
 	if active {
-		fmt.Fprintf(w, "%s %s\n", blue.Sprint(name), green.Sprint("● active"))
+		_, _ = fmt.Fprintf(w, "%s %s\n", blue.Sprint(name), green.Sprint("● active"))
 	} else {
-		fmt.Fprintln(w, blue.Sprint(name))
+		_, _ = fmt.Fprintln(w, blue.Sprint(name))
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 
 	// Path row
-	fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", "Path"), ShortenHome(path))
+	_, _ = fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", "Path"), ShortenHome(path))
 
 	// Contents rows
 	if len(entries) == 0 {
-		fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", "Contents"), dim.Sprint("(empty)"))
+		_, _ = fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", "Contents"), dim.Sprint("(empty)"))
 		return
 	}
 	for i, e := range entries {
@@ -139,7 +139,7 @@ func InspectProfile(w io.Writer, name, path string, active bool, entries []os.Di
 		if i == 0 {
 			label = "Contents"
 		}
-		fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", label), entryName)
+		_, _ = fmt.Fprintf(w, "%s%s\n", dim.Sprintf("%-9s", label), entryName)
 	}
 }
 
@@ -156,42 +156,42 @@ const (
 func DoctorRow(w io.Writer, status DoctorStatus, msg string) {
 	switch status {
 	case StatusOK:
-		fmt.Fprintf(w, "  %s  %s\n", green.Sprint("✓"), msg)
+		_, _ = fmt.Fprintf(w, "  %s  %s\n", green.Sprint("✓"), msg)
 	case StatusWarn:
-		fmt.Fprintf(w, "  %s  %s\n", yellow.Sprint("⚠"), msg)
+		_, _ = fmt.Fprintf(w, "  %s  %s\n", yellow.Sprint("⚠"), msg)
 	case StatusFail:
-		fmt.Fprintf(w, "  %s  %s\n", red.Sprint("✗"), msg)
+		_, _ = fmt.Fprintf(w, "  %s  %s\n", red.Sprint("✗"), msg)
 	default:
-		fmt.Fprintf(w, "  %s  %s\n", dim.Sprint("?"), msg)
+		_, _ = fmt.Fprintf(w, "  %s  %s\n", dim.Sprint("?"), msg)
 	}
 }
 
 // DoctorSection prints a dim section label for grouping doctor checks.
 func DoctorSection(w io.Writer, label string) {
-	fmt.Fprintln(w, dim.Sprint(label))
+	_, _ = fmt.Fprintln(w, dim.Sprint(label))
 }
 
 // DoctorSummary writes the final summary line for `opm doctor`.
 func DoctorSummary(w io.Writer, warnings, failures int) {
 	switch {
 	case failures == 0 && warnings == 0:
-		fmt.Fprintln(w, green.Sprint("✓ All checks passed"))
+		_, _ = fmt.Fprintln(w, green.Sprint("✓ All checks passed"))
 	case failures == 0:
-		fmt.Fprintln(w, yellow.Sprintf("⚠ %d warning(s)", warnings))
+		_, _ = fmt.Fprintln(w, yellow.Sprintf("⚠ %d warning(s)", warnings))
 	default:
 		// Failures dominate; warnings are subsumed into the failure count display.
-		fmt.Fprintln(w, red.Sprintf("✗ %d problem(s) found", failures))
+		_, _ = fmt.Fprintln(w, red.Sprintf("✗ %d problem(s) found", failures))
 	}
 }
 
 // HelpHeader writes the top-level header block for `opm --help`.
 func HelpHeader(w io.Writer, name, short string) {
-	fmt.Fprintf(w, "%s — %s\n\nUsage:\n  %s <command> [flags]\n\n", cmdColor.Sprint(name), short, name)
+	_, _ = fmt.Fprintf(w, "%s — %s\n\nUsage:\n  %s <command> [flags]\n\n", cmdColor.Sprint(name), short, name)
 }
 
 // HelpSection writes a colored section header (e.g. "Setup").
 func HelpSection(w io.Writer, label string) {
-	fmt.Fprintln(w, steelBlue.Sprint(label))
+	_, _ = fmt.Fprintln(w, steelBlue.Sprint(label))
 }
 
 // HelpCommand writes a single command row inside a section.
@@ -202,7 +202,7 @@ func HelpCommand(w io.Writer, name, description, alias string) {
 	if alias != "" {
 		aliasStr = "  " + dim.Sprintf("(%s)", alias)
 	}
-	fmt.Fprintf(w, "  %s\t%s%s\n", cmdColor.Sprint(name), description, aliasStr)
+	_, _ = fmt.Fprintf(w, "  %s\t%s%s\n", cmdColor.Sprint(name), description, aliasStr)
 }
 
 // HelpFlag returns a formatted flag entry string for inline use.
@@ -221,7 +221,7 @@ func HelpFlagTable(w io.Writer, flags [][2]string) {
 	}
 	for _, f := range flags {
 		pad := strings.Repeat(" ", maxLen-len(f[0]))
-		fmt.Fprintf(w, "  %s%s    %s\n", flagColor.Sprint(f[0]), pad, f[1])
+		_, _ = fmt.Fprintf(w, "  %s%s    %s\n", flagColor.Sprint(f[0]), pad, f[1])
 	}
 }
 
@@ -233,11 +233,11 @@ func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
 		cmdName = "opm " + useParts[0]
 	}
 
-	fmt.Fprintf(w, "%s — %s\n", steelBlue.Sprint(cmdName), cmd.Short)
+	_, _ = fmt.Fprintf(w, "%s — %s\n", steelBlue.Sprint(cmdName), cmd.Short)
 
 	if cmd.Long != "" {
-		fmt.Fprintln(w)
-		fmt.Fprintln(w, cmd.Long)
+		_, _ = fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w, cmd.Long)
 	}
 
 	allFlags := &pflag.FlagSet{}
@@ -252,18 +252,18 @@ func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
 		}
 	})
 
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	HelpSection(w, "Usage:")
 	// Build the full usage line: "opm <use-field>" rather than cmd.UseLine()
 	// which omits the root command name for standalone (parentless) commands.
 	if allFlags.HasFlags() {
-		fmt.Fprintf(w, "  opm %s [flags]\n", cmd.Use)
+		_, _ = fmt.Fprintf(w, "  opm %s [flags]\n", cmd.Use)
 	} else {
-		fmt.Fprintf(w, "  opm %s\n", cmd.Use)
+		_, _ = fmt.Fprintf(w, "  opm %s\n", cmd.Use)
 	}
 
 	if allFlags.HasFlags() {
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 		HelpSection(w, "Flags:")
 		type flagRow struct {
 			name  string
@@ -287,7 +287,7 @@ func SubcmdHelp(w io.Writer, cmd *cobra.Command) {
 		}
 		for _, r := range rows {
 			pad := strings.Repeat(" ", maxLen-len(r.name))
-			fmt.Fprintf(w, "  %s%s    %s\n", flagColor.Sprint(r.name), pad, r.usage)
+			_, _ = fmt.Fprintf(w, "  %s%s    %s\n", flagColor.Sprint(r.name), pad, r.usage)
 		}
 	}
 }

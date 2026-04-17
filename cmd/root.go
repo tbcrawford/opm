@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
 	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/tbcrawford/opm/internal/store"
-	"github.com/spf13/cobra"
 )
 
-// silentErr is returned by commands that want exit code 1 without printing an
+// errSilent is returned by commands that want exit code 1 without printing an
 // error message. The error is already displayed inline (e.g. doctor's output).
-var silentErr = errors.New("silent exit 1")
+var errSilent = errors.New("silent exit 1")
 
 var rootCmd = &cobra.Command{
 	Use:           "opm",
@@ -26,7 +26,7 @@ var rootCmd = &cobra.Command{
 // Execute is the binary entry point called by main.go.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		if !errors.Is(err, silentErr) {
+		if !errors.Is(err, errSilent) {
 			output.Error(os.Stderr, err.Error())
 		}
 		os.Exit(1)
@@ -55,7 +55,7 @@ func managedGuard(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot determine opm state: %w", err)
 	}
 	if !managed {
-		return fmt.Errorf("~/.config/opencode is not managed by opm\n\n  Run 'opm init' to initialize.")
+		return fmt.Errorf("~/.config/opencode is not managed by opm\n\n  Run 'opm init' to initialize")
 	}
 	return nil
 }

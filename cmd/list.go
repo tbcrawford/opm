@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/tbcrawford/opm/internal/output"
 	"github.com/spf13/cobra"
+	"github.com/tbcrawford/opm/internal/output"
 )
 
 var listLong bool
@@ -32,7 +32,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(profiles) == 0 {
-		fmt.Fprintln(cmd.OutOrStdout(), "No profiles found. Run 'opm create <name>' to create one.")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No profiles found. Run 'opm create <name>' to create one.")
 		return nil
 	}
 
