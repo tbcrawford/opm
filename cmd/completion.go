@@ -6,20 +6,28 @@ import "github.com/spf13/cobra"
 // Returns existing (non-dangling) profile names for shell tab completion.
 // Works with zsh, bash, and fish via cobra's completion infrastructure.
 func profileNameCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return completeProfileNames(args, -1)
+	return completeProfileNames(args, -1, true)
 }
 
 // singleArgProfileCompletion completes only the first positional argument.
 // Use for commands that take exactly one profile name (use, inspect, path).
 func singleArgProfileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return completeProfileNames(args, 1)
+	return completeProfileNames(args, 1, false)
 }
 
 // completeProfileNames returns profile names for tab completion.
 // maxArgs limits how many positional args get completion (-1 = unlimited).
-func completeProfileNames(args []string, maxArgs int) ([]string, cobra.ShellCompDirective) {
+// When excludeSelected is true, already-selected args are filtered out.
+func completeProfileNames(args []string, maxArgs int, excludeSelected bool) ([]string, cobra.ShellCompDirective) {
 	if maxArgs >= 0 && len(args) >= maxArgs {
 		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	selected := make(map[string]bool, len(args))
+	if excludeSelected {
+		for _, arg := range args {
+			selected[arg] = true
+		}
 	}
 
 	s := newStore()
@@ -35,7 +43,7 @@ func completeProfileNames(args []string, maxArgs int) ([]string, cobra.ShellComp
 
 	var names []string
 	for _, p := range profiles {
-		if !p.Dangling {
+		if !p.Dangling && !selected[p.Name] {
 			names = append(names, p.Name)
 		}
 	}

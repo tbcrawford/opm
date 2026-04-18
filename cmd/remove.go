@@ -31,11 +31,6 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	s := newStore()
 	w := cmd.OutOrStdout()
 
-	active, err := s.ActiveProfile()
-	if err != nil {
-		return fmt.Errorf("determine active profile: %w", err)
-	}
-
 	// Validate all names before any filesystem access.
 	for _, name := range args {
 		if err := store.ValidateName(name); err != nil {
@@ -43,11 +38,24 @@ func runRemove(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	seen := make(map[string]bool, len(args))
+	for _, name := range args {
+		if seen[name] {
+			return fmt.Errorf("context %q specified more than once", name)
+		}
+		seen[name] = true
+	}
+
 	// Validate all names exist before removing anything.
 	for _, name := range args {
 		if _, err := s.GetProfile(name); err != nil {
 			return err
 		}
+	}
+
+	active, err := s.ActiveProfile()
+	if err != nil {
+		return fmt.Errorf("determine active profile: %w", err)
 	}
 
 	// If the active profile is in the list, handle it first.

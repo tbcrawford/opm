@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tbcrawford/opm/internal/store"
@@ -60,6 +61,13 @@ func (h *cmdHarness) run(args ...string) (stdout, stderr string, err error) {
 
 	err = rootCmd.Execute()
 	return outBuf.String(), errBuf.String(), err
+}
+
+func (h *cmdHarness) useStoreFactory(t *testing.T) {
+	t.Helper()
+	origFactory := storeFactory
+	storeFactory = func() *store.Store { return h.store }
+	t.Cleanup(func() { storeFactory = origFactory })
 }
 
 // mustInit is a helper that runs opm init and requires no error.
@@ -282,6 +290,29 @@ func TestShow_FallbackWarnsOnBrokenSymlink(t *testing.T) {
 	assert.Equal(t, "default_gone\n", out)
 }
 
+func TestShow_FallbackWhenSymlinkMissingUsesCurrent(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+
+	require.NoError(t, os.Remove(h.opencodeDir))
+	require.NoError(t, h.store.SetCurrent("default"))
+
+	out, stderr, err := h.run("show")
+	require.NoError(t, err)
+	assert.Equal(t, "default\n", out)
+	assert.Contains(t, stderr, "warning: symlink is broken or absent")
+}
+
+func TestShow_ForeignSymlinkRejected(t *testing.T) {
+	h := newHarness(t)
+	foreign := t.TempDir()
+	require.NoError(t, os.Symlink(foreign, h.opencodeDir))
+
+	_, _, err := h.run("show")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not managed by opm")
+}
+
 // ── remove ────────────────────────────────────────────────────────────────────
 
 func TestRemove_NonActive(t *testing.T) {
@@ -343,6 +374,18 @@ func TestRemove_MultipleNames(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoDirExists(t, h.store.ProfileDir("a"))
 	assert.NoDirExists(t, h.store.ProfileDir("b"))
+}
+
+func TestRemove_DuplicateNamesRejectedBeforeDeletion(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	_, _, err := h.run("create", "work")
+	require.NoError(t, err)
+
+	_, _, err = h.run("remove", "work", "work")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "specified more than once")
+	assert.DirExists(t, h.store.ProfileDir("work"))
 }
 
 func TestRemove_NonexistentAborts(t *testing.T) {
@@ -411,6 +454,50 @@ func TestCopy_InvalidSrcName(t *testing.T) {
 
 	_, _, err := h.run("copy", "../evil", "dst")
 	require.Error(t, err)
+}
+
+// ── completion ───────────────────────────────────────────────────────────────
+
+func TestCopy_Completion_OnlyCompletesFirstArg(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	_, _, err := h.run("create", "work")
+	require.NoError(t, err)
+	h.useStoreFactory(t)
+
+	names, directive := copyCmd.ValidArgsFunction(copyCmd, nil, "")
+	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
+	assert.ElementsMatch(t, []string{"default", "work"}, names)
+
+	names, directive = copyCmd.ValidArgsFunction(copyCmd, []string{"default"}, "")
+	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
+	assert.Empty(t, names)
+}
+
+func TestRename_Completion_OnlyCompletesFirstArg(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	_, _, err := h.run("create", "work")
+	require.NoError(t, err)
+	h.useStoreFactory(t)
+
+	names, directive := renameCmd.ValidArgsFunction(renameCmd, []string{"default"}, "")
+	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
+	assert.Empty(t, names)
+}
+
+func TestRemove_Completion_ExcludesAlreadySelectedProfiles(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	_, _, err := h.run("create", "work")
+	require.NoError(t, err)
+	_, _, err = h.run("create", "personal")
+	require.NoError(t, err)
+	h.useStoreFactory(t)
+
+	names, directive := removeCmd.ValidArgsFunction(removeCmd, []string{"work"}, "")
+	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
+	assert.ElementsMatch(t, []string{"default", "personal"}, names)
 }
 
 // ── path ──────────────────────────────────────────────────────────────────────

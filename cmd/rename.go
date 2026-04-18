@@ -15,7 +15,7 @@ var renameCmd = &cobra.Command{
 	Short:             "Rename a profile",
 	Args:              cobra.ExactArgs(2),
 	PersistentPreRunE: managedGuard,
-	ValidArgsFunction: profileNameCompletion,
+	ValidArgsFunction: singleArgProfileCompletion,
 	SilenceUsage:      true,
 	RunE:              runRename,
 }
