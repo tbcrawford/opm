@@ -9,25 +9,24 @@ import (
 	"github.com/tbcrawford/opm/internal/symlink"
 )
 
-var removeForce bool
-
 var removeCmd = &cobra.Command{
 	Use:               "remove <name> [name...]",
 	Aliases:           []string{"rm"},
 	Short:             "Remove one or more profiles",
 	Args:              cobra.MinimumNArgs(1),
-	PersistentPreRunE: managedGuard,
+	PreRunE:           managedGuard,
 	ValidArgsFunction: profileNameCompletion,
 	SilenceUsage:      true,
 	RunE:              runRemove,
 }
 
 func init() {
-	removeCmd.Flags().BoolVarP(&removeForce, "force", "f", false, "Force removal of the active profile (auto-switches first)")
+	removeCmd.Flags().BoolP("force", "f", false, "Force removal of the active profile (auto-switches first)")
 	rootCmd.AddCommand(removeCmd)
 }
 
 func runRemove(cmd *cobra.Command, args []string) error {
+	force, _ := cmd.Flags().GetBool("force")
 	s := newStore()
 	w := cmd.OutOrStdout()
 
@@ -63,7 +62,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 		if name != active {
 			continue
 		}
-		if !removeForce {
+		if !force {
 			return fmt.Errorf("cannot remove the active profile\n\n  Switch first:     opm use <name>\n  Or force remove:  opm remove --force %s", name)
 		}
 		// Auto-switch away, excluding ALL names being removed.

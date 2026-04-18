@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/store"
 	"github.com/tbcrawford/opm/internal/symlink"
 )
 
@@ -13,7 +12,7 @@ var useCmd = &cobra.Command{
 	Use:               "use <name>",
 	Short:             "Switch to a profile",
 	Args:              cobra.ExactArgs(1),
-	PersistentPreRunE: managedGuard,
+	PreRunE:           managedGuard,
 	ValidArgsFunction: singleArgProfileCompletion,
 	SilenceUsage:      true,
 	RunE:              runUse,
@@ -25,9 +24,6 @@ func init() {
 
 func runUse(cmd *cobra.Command, args []string) error {
 	name := args[0]
-	if err := store.ValidateName(name); err != nil {
-		return err
-	}
 	s := newStore()
 
 	profileDir, err := s.GetProfile(name)

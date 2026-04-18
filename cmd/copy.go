@@ -9,7 +9,7 @@ var copyCmd = &cobra.Command{
 	Use:               "copy <src> <dst>",
 	Short:             "Copy a profile to a new name",
 	Args:              cobra.ExactArgs(2),
-	PersistentPreRunE: managedGuard,
+	PreRunE:           managedGuard,
 	ValidArgsFunction: singleArgProfileCompletion,
 	SilenceUsage:      true,
 	RunE:              runCopy,

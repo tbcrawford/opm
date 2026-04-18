@@ -3,17 +3,16 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/paths"
 )
 
 var resetCmd = &cobra.Command{
-	Use:               "reset",
-	Short:             "Restore ~/.config/opencode to a plain directory",
-	Long:              "Removes opm's symlink and copies the active profile back to ~/.config/opencode as a real directory.\nAll profiles in ~/.config/opm/profiles/ are left intact.",
-	Args:              cobra.NoArgs,
-	PersistentPreRunE: managedGuard,
-	SilenceUsage:      true,
-	RunE:              runReset,
+	Use:          "reset",
+	Short:        "Restore ~/.config/opencode to a plain directory",
+	Long:         "Removes opm's symlink and copies the active profile back to ~/.config/opencode as a real directory.\nAll profiles in ~/.config/opm/profiles/ are left intact.",
+	Args:         cobra.NoArgs,
+	PreRunE:      managedGuard,
+	SilenceUsage: true,
+	RunE:         runReset,
 }
 
 func init() {
@@ -27,7 +26,7 @@ func runReset(cmd *cobra.Command, args []string) error {
 	}
 	output.Success(cmd.OutOrStdout(),
 		"Reset complete — ~/.config/opencode is now a plain directory",
-		"Profiles left intact at "+output.ShortenHome(paths.ProfilesDir())+"  •  remove with: rm -rf "+output.ShortenHome(paths.OpmDir()),
+		"Profiles left intact at "+output.ShortenHome(s.ProfilesDir())+"  •  remove with: rm -rf "+output.ShortenHome(s.OpmDir()),
 	)
 	return nil
 }

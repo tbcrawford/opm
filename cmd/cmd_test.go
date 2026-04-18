@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tbcrawford/opm/internal/store"
@@ -44,18 +45,22 @@ func newHarness(t *testing.T) *cmdHarness {
 	return &cmdHarness{t: t, store: s, opencodeDir: opencodeDir}
 }
 
+// resetCmdFlags resets every flag on the command tree to its default value.
+// Cobra does NOT reset flag values between Execute() calls on a shared command
+// tree — state would leak from test to test without this.
+func resetCmdFlags(root *cobra.Command) {
+	root.Flags().VisitAll(func(f *pflag.Flag) { _ = f.Value.Set(f.DefValue) })
+	for _, sub := range root.Commands() {
+		resetCmdFlags(sub)
+	}
+}
+
 // run executes the root command with the given args and returns stdout, stderr, and any error.
 // It injects the harness store so no real filesystem is touched.
 func (h *cmdHarness) run(args ...string) (stdout, stderr string, err error) {
 	h.t.Helper()
 
-	// Reset all flag-bound package vars to their defaults before each Execute().
-	// Cobra does NOT reset flag values between Execute() calls on a shared command
-	// tree — persistent state would leak from test to test without this.
-	initProfileName = "default"
-	createFrom = ""
-	listLong = false
-	removeForce = false
+	resetCmdFlags(rootCmd)
 
 	// Inject store factory — restore after test.
 	origFactory := storeFactory

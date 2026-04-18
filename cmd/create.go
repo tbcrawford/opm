@@ -5,24 +5,23 @@ import (
 	"github.com/tbcrawford/opm/internal/output"
 )
 
-var createFrom string
-
 var createCmd = &cobra.Command{
-	Use:               "create <name>",
-	Short:             "Create a new profile",
-	Args:              cobra.ExactArgs(1),
-	PersistentPreRunE: managedGuard,
-	SilenceUsage:      true,
-	RunE:              runCreate,
+	Use:          "create <name>",
+	Short:        "Create a new profile",
+	Args:         cobra.ExactArgs(1),
+	PreRunE:      managedGuard,
+	SilenceUsage: true,
+	RunE:         runCreate,
 }
 
 func init() {
-	createCmd.Flags().StringVar(&createFrom, "from", "", "Copy an existing profile as the starting point")
+	createCmd.Flags().String("from", "", "Copy an existing profile as the starting point")
 	rootCmd.AddCommand(createCmd)
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
 	name := args[0]
+	createFrom, _ := cmd.Flags().GetString("from")
 	s := newStore()
 
 	if createFrom != "" {

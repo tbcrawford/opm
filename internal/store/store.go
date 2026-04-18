@@ -48,6 +48,9 @@ func (s *Store) ProfileDir(name string) string {
 // ProfilesDir returns the absolute path to the profiles directory.
 func (s *Store) ProfilesDir() string { return s.profilesDir() }
 
+// OpmDir returns the absolute path to the opm state directory (the store root).
+func (s *Store) OpmDir() string { return s.root }
+
 // OpencodeDir returns the path to the managed opencode symlink (~/.config/opencode).
 func (s *Store) OpencodeDir() string { return s.opencodeDir }
 
@@ -109,6 +112,7 @@ func (s *Store) managedLinkState() (managedLinkState, error) {
 		return state, nil
 	}
 
+	// Resolve the symlink target to an absolute, clean path.
 	target := st.Target
 	if !filepath.IsAbs(target) {
 		target = filepath.Join(filepath.Dir(s.opencodeDir), target)
@@ -117,46 +121,78 @@ func (s *Store) managedLinkState() (managedLinkState, error) {
 	state.ResolvedTarget = target
 	state.ProfileName = filepath.Base(target)
 
-	rel, err := filepath.Rel(s.profilesDir(), target)
-	if err == nil && rel != "." && rel != "" && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && strings.Contains(rel, string(filepath.Separator)) {
+	// Guard against degenerate or nested paths masquerading as profile names.
+	if !isValidProfileBasename(state.ProfileName) {
 		return state, nil
 	}
-	if state.ProfileName == "." || state.ProfileName == "" || state.ProfileName == ".." || strings.Contains(state.ProfileName, string(filepath.Separator)) {
-		return state, nil
-	}
-	rawDirectChild := err == nil && rel == state.ProfileName
-	if st.Dangling {
-		resolvedProfilesDir, err := filepath.EvalSymlinks(s.profilesDir())
-		if err != nil {
-			if os.IsNotExist(err) {
-				return state, nil
-			}
-			return managedLinkState{}, fmt.Errorf("resolve profiles dir: %w", err)
-		}
-		if !rawDirectChild {
-			resolvedParent, err := filepath.EvalSymlinks(filepath.Dir(target))
-			if err == nil && resolvedParent == resolvedProfilesDir {
-				rawDirectChild = true
-			}
-		}
-		if !rawDirectChild {
-			return state, nil
-		}
 
-		profileInfo, err := os.Lstat(target)
-		if err != nil {
-			if os.IsNotExist(err) {
-				state.Managed = true
-				return state, nil
-			}
-			return managedLinkState{}, fmt.Errorf("stat profile entry: %w", err)
-		}
-		if profileInfo.Mode()&os.ModeSymlink != 0 {
+	// isDirectChildOf reports whether target is a direct child of profilesDir
+	// without descending further. It handles both raw and symlink-resolved paths.
+	if st.Dangling {
+		return s.resolveDanglingLink(state)
+	}
+	return s.resolveActiveLink(state)
+}
+
+// isValidProfileBasename returns false for empty, dot, dotdot, or paths
+// containing a separator — all of which cannot be a valid profile directory name.
+func isValidProfileBasename(name string) bool {
+	return name != "" && name != "." && name != ".." &&
+		!strings.Contains(name, string(filepath.Separator))
+}
+
+// resolveDanglingLink checks whether a dangling symlink's target is a direct
+// child of the profiles directory, making it a managed (but missing) profile.
+func (s *Store) resolveDanglingLink(state managedLinkState) (managedLinkState, error) {
+	target := state.ResolvedTarget
+
+	// Resolve the profiles directory through any of its own symlinks. If it
+	// doesn't exist (opm never initialized), the link cannot be managed.
+	resolvedProfilesDir, err := filepath.EvalSymlinks(s.profilesDir())
+	if err != nil {
+		if os.IsNotExist(err) {
 			return state, nil
 		}
-		state.Managed = true
+		return managedLinkState{}, fmt.Errorf("resolve profiles dir: %w", err)
+	}
+
+	// Fast path: raw rel check (string math, no I/O).
+	rawRel, rawErr := filepath.Rel(s.profilesDir(), target)
+	rawDirectChild := rawErr == nil && rawRel == state.ProfileName
+
+	if !rawDirectChild {
+		// Slow path: compare resolved parent against the resolved profiles dir.
+		resolvedParent, err := filepath.EvalSymlinks(filepath.Dir(target))
+		if err == nil && resolvedParent == resolvedProfilesDir {
+			rawDirectChild = true
+		}
+	}
+
+	if !rawDirectChild {
 		return state, nil
 	}
+
+	// The target's parent resolves to the profiles dir — confirm the target
+	// entry itself is not another symlink (which would be invalid).
+	profileInfo, err := os.Lstat(target)
+	if err != nil {
+		if os.IsNotExist(err) {
+			state.Managed = true
+			return state, nil
+		}
+		return managedLinkState{}, fmt.Errorf("stat profile entry: %w", err)
+	}
+	if profileInfo.Mode()&os.ModeSymlink != 0 {
+		return state, nil
+	}
+	state.Managed = true
+	return state, nil
+}
+
+// resolveActiveLink checks whether a non-dangling symlink resolves to a
+// directory that is a direct child of the profiles directory.
+func (s *Store) resolveActiveLink(state managedLinkState) (managedLinkState, error) {
+	target := state.ResolvedTarget
 
 	profileInfo, err := os.Lstat(target)
 	if err != nil {
@@ -177,14 +213,16 @@ func (s *Store) managedLinkState() (managedLinkState, error) {
 		}
 		return managedLinkState{}, fmt.Errorf("resolve profiles dir: %w", err)
 	}
+
 	resolvedRel, err := filepath.Rel(resolvedProfilesDir, effectiveTarget)
 	if err != nil {
 		return managedLinkState{}, fmt.Errorf("resolve managed target: %w", err)
 	}
-	if resolvedRel == "." || resolvedRel == "" || resolvedRel == ".." || strings.HasPrefix(resolvedRel, ".."+string(filepath.Separator)) {
-		return state, nil
-	}
-	if strings.Contains(resolvedRel, string(filepath.Separator)) {
+
+	// Must be a direct child — no nesting, no dotdot, and name must match.
+	if !isValidProfileBasename(resolvedRel) || resolvedRel == "." ||
+		strings.HasPrefix(resolvedRel, ".."+string(filepath.Separator)) ||
+		strings.Contains(resolvedRel, string(filepath.Separator)) {
 		return state, nil
 	}
 	if resolvedRel != state.ProfileName {

@@ -6,14 +6,13 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/store"
 )
 
 var inspectCmd = &cobra.Command{
 	Use:               "inspect <name>",
 	Short:             "Show detailed information about a profile",
 	Args:              cobra.ExactArgs(1),
-	PersistentPreRunE: managedGuard,
+	PreRunE:           managedGuard,
 	ValidArgsFunction: singleArgProfileCompletion,
 	SilenceUsage:      true,
 	RunE:              runInspect,
@@ -25,9 +24,6 @@ func init() {
 
 func runInspect(cmd *cobra.Command, args []string) error {
 	name := args[0]
-	if err := store.ValidateName(name); err != nil {
-		return err
-	}
 	s := newStore()
 
 	profilePath, err := s.GetProfile(name)

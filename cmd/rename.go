@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/store"
 	"github.com/tbcrawford/opm/internal/symlink"
 )
 
@@ -14,7 +13,7 @@ var renameCmd = &cobra.Command{
 	Use:               "rename <old> <new>",
 	Short:             "Rename a profile",
 	Args:              cobra.ExactArgs(2),
-	PersistentPreRunE: managedGuard,
+	PreRunE:           managedGuard,
 	ValidArgsFunction: singleArgProfileCompletion,
 	SilenceUsage:      true,
 	RunE:              runRename,
@@ -26,12 +25,6 @@ func init() {
 
 func runRename(cmd *cobra.Command, args []string) error {
 	oldName, newName := args[0], args[1]
-	if err := store.ValidateName(oldName); err != nil {
-		return err
-	}
-	if err := store.ValidateName(newName); err != nil {
-		return err
-	}
 	s := newStore()
 
 	active, err := s.ActiveProfile()

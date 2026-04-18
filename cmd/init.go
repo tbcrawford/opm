@@ -11,8 +11,6 @@ import (
 	"github.com/tbcrawford/opm/internal/symlink"
 )
 
-var initProfileName string
-
 var initCmd = &cobra.Command{
 	Use:          "init",
 	Short:        "Initialize opm and migrate existing OpenCode config",
@@ -23,7 +21,7 @@ var initCmd = &cobra.Command{
 }
 
 func init() {
-	initCmd.Flags().StringVar(&initProfileName, "as", "default", "name to give the initial profile")
+	initCmd.Flags().String("as", "default", "name to give the initial profile")
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -37,7 +35,7 @@ func alreadyInitializedError(s *store.Store) error {
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
-	profileName := initProfileName
+	profileName, _ := cmd.Flags().GetString("as")
 	if err := store.ValidateName(profileName); err != nil {
 		return fmt.Errorf("--as: %w", err)
 	}
@@ -66,70 +64,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("~/.config/opencode is not a directory or symlink\n\n  Back it up and remove it, then run 'opm init' again")
 	}
 
-	tmpSym := opencodeDir + ".opm-new"
-	profileIsDir := false
-	if _, tmpErr := os.Lstat(tmpSym); tmpErr == nil {
-		tmpSt, err := symlink.Inspect(tmpSym)
-		if err != nil {
-			return fmt.Errorf("inspect %s: %w", tmpSym, err)
-		}
-		profileExists := false
-		if profileInfo, err := os.Lstat(profileDir); err == nil {
-			profileExists = true
-			profileIsDir = profileInfo.IsDir()
-		} else if !os.IsNotExist(err) {
-			return fmt.Errorf("inspect %s: %w", profileDir, err)
-		}
-		if !profileExists || !tmpSt.IsSymlink || tmpSt.Target != profileDir {
-			return fmt.Errorf(
-				"stale interrupted init state detected\n\n  To recover:\n    remove ~/.config/opencode.opm-new\n    opm init",
-			)
-		}
-	}
-
-	if _, statErr := os.Lstat(profileDir); statErr == nil {
-		if _, tmpErr := os.Lstat(tmpSym); tmpErr == nil {
-			if !profileIsDir {
-				return fmt.Errorf(
-					"partial initialization detected: profiles/%s exists but is not a directory\n\n"+
-						"  To recover:\n"+
-						"    rm -rf ~/.config/opm/profiles/%s\n"+
-						"    opm init",
-					profileName, profileName,
-				)
-			}
-			if st.Exists {
-				return fmt.Errorf(
-					"partial initialization detected: profiles/%s exists but ~/.config/opencode still exists\n\n"+
-						"  To recover:\n"+
-						"    inspect and back up ~/.config/opencode\n"+
-						"    remove ~/.config/opencode\n"+
-						"    remove ~/.config/opencode.opm-new\n"+
-						"    opm init",
-					profileName,
-				)
-			}
-			if err := os.Rename(tmpSym, opencodeDir); err != nil {
-				return fmt.Errorf("resume: atomic rename symlink: %w", err)
-			}
-			if err := s.SetCurrent(profileName); err != nil {
-				warnCurrentCacheUpdate(cmd, err)
-			}
-			output.Success(cmd.OutOrStdout(), "Initialized opm", "Migrated ~/.config/opencode → profiles/"+profileName)
+	if err := checkForPartialInit(s, profileName, opencodeDir+".opm-new", profileDir, st.Exists, cmd); err != nil {
+		if err == errInitResumed {
 			return nil
 		}
-		// profile dir exists — only truly initialized if the symlink is also in place.
-		managed, mErr := s.IsOpmManaged()
-		if mErr == nil && managed {
-			return alreadyInitializedError(s)
-		}
-		return fmt.Errorf(
-			"partial initialization detected: profiles/%s exists but ~/.config/opencode is not managed by opm\n\n"+
-				"  To recover:\n"+
-				"    rm -rf ~/.config/opm/profiles/%s\n"+
-				"    opm init",
-			profileName, profileName,
-		)
+		return err
 	}
 
 	if err := s.Init(); err != nil {
@@ -139,6 +78,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	w := cmd.OutOrStdout()
 
 	if st.IsDir {
+		tmpSym := opencodeDir + ".opm-new"
 		if err := symlink.SetAtomic(profileDir, tmpSym); err != nil {
 			return fmt.Errorf("step 1 — create temp symlink: %w", err)
 		}
@@ -169,3 +109,91 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
+
+// checkForPartialInit detects and handles interrupted or partial init states
+// before any filesystem changes are made. Returns an error if a bad state is
+// found that the user must resolve manually, or nil if safe to proceed.
+// A special resume case (matching temp symlink + profile dir ready) is handled
+// by completing the install and returning a non-nil sentinel to stop the caller.
+func checkForPartialInit(s *store.Store, profileName, tmpSym, profileDir string, opencodeExists bool, cmd *cobra.Command) error {
+	_, tmpErr := os.Lstat(tmpSym)
+	tmpExists := tmpErr == nil
+
+	if !tmpExists {
+		// No temp symlink — check whether a partial profile dir was left behind.
+		if _, statErr := os.Lstat(profileDir); statErr == nil {
+			managed, mErr := s.IsOpmManaged()
+			if mErr == nil && managed {
+				return alreadyInitializedError(s)
+			}
+			return fmt.Errorf(
+				"partial initialization detected: profiles/%s exists but ~/.config/opencode is not managed by opm\n\n"+
+					"  To recover:\n"+
+					"    rm -rf ~/.config/opm/profiles/%s\n"+
+					"    opm init",
+				profileName, profileName,
+			)
+		}
+		return nil
+	}
+
+	// Temp symlink exists — inspect it.
+	tmpSt, err := symlink.Inspect(tmpSym)
+	if err != nil {
+		return fmt.Errorf("inspect %s: %w", tmpSym, err)
+	}
+
+	var profileIsDir bool
+	profileInfo, profileStatErr := os.Lstat(profileDir)
+	profileExists := profileStatErr == nil
+	if profileExists {
+		profileIsDir = profileInfo.IsDir()
+	} else if !os.IsNotExist(profileStatErr) {
+		return fmt.Errorf("inspect %s: %w", profileDir, profileStatErr)
+	}
+
+	// Temp symlink doesn't match what we'd create — stale from a different run.
+	if !profileExists || !tmpSt.IsSymlink || tmpSt.Target != profileDir {
+		return fmt.Errorf(
+			"stale interrupted init state detected\n\n  To recover:\n    remove ~/.config/opencode.opm-new\n    opm init",
+		)
+	}
+
+	// Profile dir exists and temp symlink points to it correctly.
+	if !profileIsDir {
+		return fmt.Errorf(
+			"partial initialization detected: profiles/%s exists but is not a directory\n\n"+
+				"  To recover:\n"+
+				"    rm -rf ~/.config/opm/profiles/%s\n"+
+				"    opm init",
+			profileName, profileName,
+		)
+	}
+	if opencodeExists {
+		return fmt.Errorf(
+			"partial initialization detected: profiles/%s exists but ~/.config/opencode still exists\n\n"+
+				"  To recover:\n"+
+				"    inspect and back up ~/.config/opencode\n"+
+				"    remove ~/.config/opencode\n"+
+				"    remove ~/.config/opencode.opm-new\n"+
+				"    opm init",
+			profileName,
+		)
+	}
+
+	// Resume: profile dir is ready, opencode is absent — just install the symlink.
+	opencodeDir := s.OpencodeDir()
+	if err := os.Rename(tmpSym, opencodeDir); err != nil {
+		return fmt.Errorf("resume: atomic rename symlink: %w", err)
+	}
+	if err := s.SetCurrent(profileName); err != nil {
+		warnCurrentCacheUpdate(cmd, err)
+	}
+	output.Success(cmd.OutOrStdout(), "Initialized opm", "Migrated ~/.config/opencode → profiles/"+profileName)
+	// Return a sentinel so the caller knows init completed during resume.
+	return errInitResumed
+}
+
+// errInitResumed signals that checkForPartialInit completed a resume and the
+// caller should return nil without further action.
+var errInitResumed = fmt.Errorf("init resumed")

@@ -7,24 +7,23 @@ import (
 	"github.com/tbcrawford/opm/internal/output"
 )
 
-var listLong bool
-
 var listCmd = &cobra.Command{
-	Use:               "list",
-	Aliases:           []string{"ls"},
-	Short:             "List all profiles",
-	Args:              cobra.NoArgs,
-	PersistentPreRunE: managedGuard,
-	SilenceUsage:      true,
-	RunE:              runList,
+	Use:          "list",
+	Aliases:      []string{"ls"},
+	Short:        "List all profiles",
+	Args:         cobra.NoArgs,
+	PreRunE:      managedGuard,
+	SilenceUsage: true,
+	RunE:         runList,
 }
 
 func init() {
-	listCmd.Flags().BoolVarP(&listLong, "long", "l", false, "Show profile paths")
+	listCmd.Flags().BoolP("long", "l", false, "Show profile paths")
 	rootCmd.AddCommand(listCmd)
 }
 
 func runList(cmd *cobra.Command, args []string) error {
+	long, _ := cmd.Flags().GetBool("long")
 	s := newStore()
 	profiles, err := s.ListProfiles()
 	if err != nil {
@@ -36,7 +35,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if listLong {
+	if long {
 		output.ProfileTableLong(cmd.OutOrStdout(), profiles)
 	} else {
 		output.ProfileTable(cmd.OutOrStdout(), profiles)
