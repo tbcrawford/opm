@@ -6,7 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 // Status describes the state of a filesystem path that may be a symlink.
@@ -118,6 +119,6 @@ func shouldRemoveTemp(name, base string) bool {
 }
 
 func processExists(pid int) bool {
-	err := syscall.Kill(pid, 0)
-	return err == nil || err == syscall.EPERM
+	err := unix.Kill(pid, 0)
+	return err == nil || err == unix.EPERM
 }
