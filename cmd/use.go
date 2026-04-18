@@ -49,7 +49,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := s.SetCurrent(name); err != nil {
-		return fmt.Errorf("update current: %w", err)
+		warnCurrentCacheUpdate(cmd, err)
 	}
 
 	var msg string

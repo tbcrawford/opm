@@ -85,30 +85,142 @@ func (s *Store) SetCurrent(name string) error {
 	return nil
 }
 
+type managedLinkState struct {
+	Exists         bool
+	IsSymlink      bool
+	Managed        bool
+	ResolvedTarget string
+	ProfileName    string
+	Dangling       bool
+}
+
+func (s *Store) managedLinkState() (managedLinkState, error) {
+	st, err := symlink.Inspect(s.opencodeDir)
+	if err != nil {
+		return managedLinkState{}, err
+	}
+
+	state := managedLinkState{
+		Exists:    st.Exists,
+		IsSymlink: st.IsSymlink,
+		Dangling:  st.Dangling,
+	}
+	if !st.IsSymlink {
+		return state, nil
+	}
+
+	target := st.Target
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(filepath.Dir(s.opencodeDir), target)
+	}
+	target = filepath.Clean(target)
+	state.ResolvedTarget = target
+	state.ProfileName = filepath.Base(target)
+
+	rel, err := filepath.Rel(s.profilesDir(), target)
+	if err == nil && rel != "." && rel != "" && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && strings.Contains(rel, string(filepath.Separator)) {
+		return state, nil
+	}
+	if state.ProfileName == "." || state.ProfileName == "" || state.ProfileName == ".." || strings.Contains(state.ProfileName, string(filepath.Separator)) {
+		return state, nil
+	}
+	rawDirectChild := err == nil && rel == state.ProfileName
+	if st.Dangling {
+		resolvedProfilesDir, err := filepath.EvalSymlinks(s.profilesDir())
+		if err != nil {
+			if os.IsNotExist(err) {
+				return state, nil
+			}
+			return managedLinkState{}, fmt.Errorf("resolve profiles dir: %w", err)
+		}
+		if !rawDirectChild {
+			resolvedParent, err := filepath.EvalSymlinks(filepath.Dir(target))
+			if err == nil && resolvedParent == resolvedProfilesDir {
+				rawDirectChild = true
+			}
+		}
+		if !rawDirectChild {
+			return state, nil
+		}
+
+		profileInfo, err := os.Lstat(target)
+		if err != nil {
+			if os.IsNotExist(err) {
+				state.Managed = true
+				return state, nil
+			}
+			return managedLinkState{}, fmt.Errorf("stat profile entry: %w", err)
+		}
+		if profileInfo.Mode()&os.ModeSymlink != 0 {
+			return state, nil
+		}
+		state.Managed = true
+		return state, nil
+	}
+
+	profileInfo, err := os.Lstat(target)
+	if err != nil {
+		return managedLinkState{}, fmt.Errorf("stat profile entry: %w", err)
+	}
+	if !profileInfo.IsDir() {
+		return state, nil
+	}
+
+	effectiveTarget, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		return managedLinkState{}, fmt.Errorf("resolve symlink target: %w", err)
+	}
+	resolvedProfilesDir, err := filepath.EvalSymlinks(s.profilesDir())
+	if err != nil {
+		if os.IsNotExist(err) {
+			return state, nil
+		}
+		return managedLinkState{}, fmt.Errorf("resolve profiles dir: %w", err)
+	}
+	resolvedRel, err := filepath.Rel(resolvedProfilesDir, effectiveTarget)
+	if err != nil {
+		return managedLinkState{}, fmt.Errorf("resolve managed target: %w", err)
+	}
+	if resolvedRel == "." || resolvedRel == "" || resolvedRel == ".." || strings.HasPrefix(resolvedRel, ".."+string(filepath.Separator)) {
+		return state, nil
+	}
+	if strings.Contains(resolvedRel, string(filepath.Separator)) {
+		return state, nil
+	}
+	if resolvedRel != state.ProfileName {
+		return state, nil
+	}
+
+	state.ResolvedTarget = effectiveTarget
+	state.ProfileName = resolvedRel
+	state.Managed = true
+	return state, nil
+}
+
 // ActiveProfile derives the active profile name from os.Readlink on the managed symlink.
 // Per D-12: authoritative source is the actual symlink, not the current file.
 func (s *Store) ActiveProfile() (string, error) {
-	target, err := os.Readlink(s.opencodeDir)
+	state, err := s.managedLinkState()
 	if err != nil {
-		if os.IsNotExist(err) {
-			return "", nil
-		}
-		return "", fmt.Errorf("readlink: %w", err)
+		return "", err
 	}
-	// Target is an absolute path like ~/.config/opm/profiles/work.
-	// Extract the profile name as the last path component.
-	return filepath.Base(target), nil
+	if !state.Managed || state.Dangling {
+		return "", nil
+	}
+	return state.ProfileName, nil
 }
 
 // ListProfiles scans the profiles directory and returns all profiles.
 // Active profile is determined by Readlink on the managed symlink (per D-12).
 func (s *Store) ListProfiles() ([]Profile, error) {
-	// Single Readlink call to determine active profile and detect dangling state.
-	activeTarget, readlinkErr := os.Readlink(s.opencodeDir)
-	profilesBase := s.profilesDir() + string(filepath.Separator)
+	state, err := s.managedLinkState()
+	if err != nil {
+		return nil, err
+	}
+
 	active := ""
-	if readlinkErr == nil {
-		active = filepath.Base(activeTarget)
+	if state.Managed && !state.Dangling {
+		active = state.ProfileName
 	}
 
 	entries, err := os.ReadDir(s.profilesDir())
@@ -135,29 +247,16 @@ func (s *Store) ListProfiles() ([]Profile, error) {
 		return profiles[i].Name < profiles[j].Name
 	})
 
-	// Check for dangling active profile: symlink points to a dir that no longer exists in profiles/.
-	// This happens when a user manually deletes a profile directory.
-	if readlinkErr == nil && strings.HasPrefix(activeTarget, profilesBase) {
-		activeName := filepath.Base(activeTarget)
-		found := false
-		for _, p := range profiles {
-			if p.Name == activeName {
-				found = true
-				break
-			}
-		}
-		if !found {
-			// Synthesize a dangling entry so ls can surface it.
-			profiles = append(profiles, Profile{
-				Name:     activeName,
-				Path:     activeTarget,
-				Active:   true,
-				Dangling: true,
-			})
-			sort.Slice(profiles, func(i, j int) bool {
-				return profiles[i].Name < profiles[j].Name
-			})
-		}
+	if state.Managed && state.Dangling {
+		profiles = append(profiles, Profile{
+			Name:     state.ProfileName,
+			Path:     state.ResolvedTarget,
+			Active:   true,
+			Dangling: true,
+		})
+		sort.Slice(profiles, func(i, j int) bool {
+			return profiles[i].Name < profiles[j].Name
+		})
 	}
 
 	return profiles, nil
@@ -165,6 +264,9 @@ func (s *Store) ListProfiles() ([]Profile, error) {
 
 // GetProfile returns the profile directory path if the profile exists.
 func (s *Store) GetProfile(name string) (string, error) {
+	if err := ValidateName(name); err != nil {
+		return "", err
+	}
 	dir := s.ProfileDir(name)
 	fi, err := os.Lstat(dir)
 	if os.IsNotExist(err) || (err == nil && !fi.IsDir()) {
@@ -204,8 +306,15 @@ func (s *Store) CopyProfile(src, dst string) error {
 	srcDir := s.ProfileDir(src)
 	dstDir := s.ProfileDir(dst)
 
-	if _, err := os.Lstat(srcDir); os.IsNotExist(err) {
+	srcInfo, err := os.Lstat(srcDir)
+	if os.IsNotExist(err) {
 		return fmt.Errorf("context %q does not exist", src)
+	}
+	if err != nil {
+		return fmt.Errorf("stat profile %q: %w", src, err)
+	}
+	if srcInfo.Mode()&os.ModeSymlink != 0 || !srcInfo.IsDir() {
+		return fmt.Errorf("context %q is not a directory", src)
 	}
 	if _, err := os.Lstat(dstDir); err == nil {
 		return fmt.Errorf("context %q already exists", dst)
@@ -218,6 +327,9 @@ func (s *Store) CopyProfile(src, dst string) error {
 // If force is false, refuses to delete the active profile.
 // If force is true, the caller is responsible for switching the symlink first (per D-01/D-02/D-03).
 func (s *Store) DeleteProfile(name string, force bool) error {
+	if err := ValidateName(name); err != nil {
+		return err
+	}
 	if !force {
 		active, err := s.ActiveProfile()
 		if err == nil && active == name {
@@ -234,14 +346,11 @@ func (s *Store) DeleteProfile(name string, force bool) error {
 // IsOpmManaged returns true if opencodeDir is a symlink whose target is inside
 // this store's profiles directory. Used by commands to gate access (per D-08/D-09).
 func (s *Store) IsOpmManaged() (bool, error) {
-	st, err := symlink.Inspect(s.opencodeDir)
+	state, err := s.managedLinkState()
 	if err != nil {
 		return false, err
 	}
-	if !st.IsSymlink {
-		return false, nil
-	}
-	return strings.HasPrefix(st.Target, s.profilesDir()+string(filepath.Separator)), nil
+	return state.Managed, nil
 }
 
 // RenameProfile renames a profile directory from oldName to newName.
@@ -278,15 +387,18 @@ func (s *Store) RenameProfile(oldName, newName string) error {
 //
 // All profile data under the store root is left intact.
 func (s *Store) Reset() error {
-	st, err := symlink.Inspect(s.opencodeDir)
+	state, err := s.managedLinkState()
 	if err != nil {
 		return fmt.Errorf("inspect %s: %w", s.opencodeDir, err)
 	}
-	if !st.IsSymlink || !strings.HasPrefix(st.Target, s.profilesDir()+string(filepath.Separator)) {
+	if !state.Managed {
 		return fmt.Errorf("%s is not managed by opm", s.opencodeDir)
 	}
+	if state.Dangling {
+		return fmt.Errorf("%s points to a missing managed profile", s.opencodeDir)
+	}
 
-	profileDir := st.Target
+	profileDir := state.ResolvedTarget
 	tmpDir := s.opencodeDir + ".opm-reset-tmp"
 
 	// Clean up any leftover tmp from a prior crash.

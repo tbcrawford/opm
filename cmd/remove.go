@@ -76,7 +76,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("switch to %q: %w", switchTarget, err)
 		}
 		if err := s.SetCurrent(switchTarget); err != nil {
-			return fmt.Errorf("update current: %w", err)
+			warnCurrentCacheUpdate(cmd, err)
 		}
 		output.Success(w, "Switched to "+output.ProfileName(switchTarget), "Auto-switched before removal")
 		break

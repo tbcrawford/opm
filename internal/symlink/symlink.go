@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+
+	"golang.org/x/sys/unix"
 )
 
 // Status describes the state of a filesystem path that may be a symlink.
@@ -52,10 +56,36 @@ func Inspect(path string) (Status, error) {
 // Per D-13: os.Symlink(target, tmp) then os.Rename(tmp, dst).
 func SetAtomic(target, linkPath string) error {
 	dir := filepath.Dir(linkPath)
-	tmpLink := filepath.Join(dir, ".opm-tmp-"+filepath.Base(linkPath))
+	base := filepath.Base(linkPath)
+	legacyTmp := filepath.Join(dir, ".opm-tmp-"+base)
+	currentPrefix := ".opm-tmp-" + base + "-" + strconv.Itoa(os.Getpid()) + "-"
 
-	// Clean up any leftover tmp from a prior crash.
-	_ = os.Remove(tmpLink)
+	// Clean up the legacy shared tmp name from older runs.
+	_ = os.Remove(legacyTmp)
+
+	matches, err := filepath.Glob(filepath.Join(dir, ".opm-tmp-"+base+"-*"))
+	if err != nil {
+		return fmt.Errorf("match temp symlinks: %w", err)
+	}
+	for _, match := range matches {
+		if !shouldRemoveTemp(filepath.Base(match), base) {
+			continue
+		}
+		_ = os.Remove(match)
+	}
+
+	tmpFile, err := os.CreateTemp(dir, currentPrefix+"*")
+	if err != nil {
+		return fmt.Errorf("create temp placeholder: %w", err)
+	}
+	tmpLink := tmpFile.Name()
+	if err := tmpFile.Close(); err != nil {
+		_ = os.Remove(tmpLink)
+		return fmt.Errorf("close temp placeholder: %w", err)
+	}
+	if err := os.Remove(tmpLink); err != nil {
+		return fmt.Errorf("remove temp placeholder: %w", err)
+	}
 
 	if err := os.Symlink(target, tmpLink); err != nil {
 		return fmt.Errorf("create temp symlink: %w", err)
@@ -66,4 +96,29 @@ func SetAtomic(target, linkPath string) error {
 		return fmt.Errorf("atomic swap: %w", err)
 	}
 	return nil
+}
+
+func shouldRemoveTemp(name, base string) bool {
+	prefix := ".opm-tmp-" + base + "-"
+	if !strings.HasPrefix(name, prefix) {
+		return false
+	}
+
+	rest := strings.TrimPrefix(name, prefix)
+	pidPart, _, ok := strings.Cut(rest, "-")
+	if !ok || pidPart == "" {
+		return true
+	}
+
+	pid, err := strconv.Atoi(pidPart)
+	if err != nil || pid <= 0 {
+		return true
+	}
+
+	return !processExists(pid)
+}
+
+func processExists(pid int) bool {
+	err := unix.Kill(pid, 0)
+	return err == nil || err == unix.EPERM
 }

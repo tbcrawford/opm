@@ -62,3 +62,7 @@ func managedGuard(cmd *cobra.Command, args []string) error {
 	}
 	return nil
 }
+
+func warnCurrentCacheUpdate(cmd *cobra.Command, err error) {
+	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: updated live symlink state, but failed to update current cache: %v\n", err)
+}

@@ -57,7 +57,7 @@ func runRename(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("update active symlink: %w (rolled back directory rename)", err)
 		}
 		if err := s.SetCurrent(newName); err != nil {
-			return fmt.Errorf("update current: %w", err)
+			warnCurrentCacheUpdate(cmd, err)
 		}
 		output.Success(w, msg, "Active profile updated")
 	} else {
