@@ -39,9 +39,12 @@ func SetVersionInfo(version, commit string) {
 }
 
 // newStore returns a production Store wired to real config paths.
-func newStore() *store.Store {
+// In tests, override storeFactory to inject a temp-dir-backed store.
+var storeFactory = func() *store.Store {
 	return store.New(paths.OpmDir(), paths.OpencodeConfigDir())
 }
+
+func newStore() *store.Store { return storeFactory() }
 
 func init() {
 	registerHelp(rootCmd)

@@ -45,6 +45,12 @@ func (s *Store) ProfileDir(name string) string {
 	return filepath.Join(s.profilesDir(), name)
 }
 
+// ProfilesDir returns the absolute path to the profiles directory.
+func (s *Store) ProfilesDir() string { return s.profilesDir() }
+
+// OpencodDir returns the path to the managed opencode symlink (~/.config/opencode).
+func (s *Store) OpencodDir() string { return s.opencodeDir }
+
 // Init creates the opm directory structure. Idempotent.
 func (s *Store) Init() error {
 	return os.MkdirAll(s.profilesDir(), 0o755)
@@ -187,8 +193,11 @@ func (s *Store) CreateProfile(name string) error {
 }
 
 // CopyProfile creates a new profile by copying an existing one.
-// Validates dst name, checks src exists and dst does not, then copies the directory tree.
+// Validates both src and dst names, checks src exists and dst does not, then copies the directory tree.
 func (s *Store) CopyProfile(src, dst string) error {
+	if err := ValidateName(src); err != nil {
+		return err
+	}
 	if err := ValidateName(dst); err != nil {
 		return err
 	}
@@ -339,6 +348,11 @@ func copyDir(src, dst string) error {
 			if err := copyDir(srcPath, dstPath); err != nil {
 				return err
 			}
+			continue
+		}
+
+		if !entry.Type().IsRegular() {
+			// Skip special files (sockets, pipes, devices) — not meaningful in a config directory.
 			continue
 		}
 

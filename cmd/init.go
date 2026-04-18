@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/paths"
+	"github.com/tbcrawford/opm/internal/store"
 	"github.com/tbcrawford/opm/internal/symlink"
 )
 
@@ -30,21 +30,26 @@ func init() {
 
 func runInit(cmd *cobra.Command, args []string) error {
 	profileName := initProfileName
-	opencodeDir := paths.OpencodeConfigDir()
-	profileDir := paths.ProfileDir(profileName)
-	profilesDir := paths.ProfilesDir()
+	if err := store.ValidateName(profileName); err != nil {
+		return fmt.Errorf("--as: %w", err)
+	}
+
+	s := newStore()
+	opencodeDir := s.OpencodDir()
+	profileDir := s.ProfileDir(profileName)
+	profilesDirSlash := s.ProfilesDir() + string(filepath.Separator)
 
 	st, err := symlink.Inspect(opencodeDir)
 	if err != nil {
 		return fmt.Errorf("inspect %s: %w", opencodeDir, err)
 	}
 
-	if st.IsSymlink && strings.HasPrefix(st.Target, profilesDir) {
+	if st.IsSymlink && strings.HasPrefix(st.Target, profilesDirSlash) {
 		activeName := filepath.Base(st.Target)
 		return fmt.Errorf("already initialized (active: %s)", activeName)
 	}
 
-	if st.IsSymlink && !strings.HasPrefix(st.Target, profilesDir) {
+	if st.IsSymlink && !strings.HasPrefix(st.Target, profilesDirSlash) {
 		return fmt.Errorf("~/.config/opencode is an unrecognized symlink\n\n  Back it up and remove it, then run 'opm init' again")
 	}
 
@@ -54,7 +59,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 			if err := os.Rename(tmpSym, opencodeDir); err != nil {
 				return fmt.Errorf("resume: atomic rename symlink: %w", err)
 			}
-			s := newStore()
 			if err := s.SetCurrent(profileName); err != nil {
 				return fmt.Errorf("set current: %w", err)
 			}
@@ -62,7 +66,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 		// profile dir exists — only truly initialized if the symlink is also in place.
-		s := newStore()
 		managed, mErr := s.IsOpmManaged()
 		if mErr == nil && managed {
 			return fmt.Errorf("already initialized (active: %s)", profileName)
@@ -76,7 +79,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	s := newStore()
 	if err := s.Init(); err != nil {
 		return fmt.Errorf("create opm dirs: %w", err)
 	}

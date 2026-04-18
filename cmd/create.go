@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/paths"
 )
 
 var createFrom string
@@ -30,10 +29,9 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		if err := s.CopyProfile(createFrom, name); err != nil {
 			return err
 		}
-		dstDir := paths.ProfileDir(name)
 		output.Success(cmd.OutOrStdout(),
 			"Created profile "+output.ProfileName(name)+" from "+output.ProfileName(createFrom),
-			output.ShortenHome(dstDir)+"/",
+			output.ShortenHome(s.ProfileDir(name))+"/",
 		)
 		return nil
 	}
@@ -41,8 +39,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	if err := s.CreateProfile(name); err != nil {
 		return err
 	}
-	profileDir := paths.ProfileDir(name)
 	output.Success(cmd.OutOrStdout(), "Created profile "+output.ProfileName(name),
-		output.ShortenHome(profileDir)+"/")
+		output.ShortenHome(s.ProfileDir(name))+"/")
 	return nil
 }

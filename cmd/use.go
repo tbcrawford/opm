@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/tbcrawford/opm/internal/store"
 	"github.com/tbcrawford/opm/internal/symlink"
 )
@@ -44,7 +43,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	opencodeDir := paths.OpencodeConfigDir()
+	opencodeDir := s.OpencodDir()
 	if err := symlink.SetAtomic(profileDir, opencodeDir); err != nil {
 		return fmt.Errorf("switch profile: %w", err)
 	}

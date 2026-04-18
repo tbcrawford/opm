@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/tbcrawford/opm/internal/store"
 	"github.com/tbcrawford/opm/internal/symlink"
 )
@@ -66,7 +64,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		targetDir := s.ProfileDir(switchTarget)
-		if err := symlink.SetAtomic(targetDir, paths.OpencodeConfigDir()); err != nil {
+		if err := symlink.SetAtomic(targetDir, s.OpencodDir()); err != nil {
 			return fmt.Errorf("switch to %q: %w", switchTarget, err)
 		}
 		if err := s.SetCurrent(switchTarget); err != nil {
@@ -113,6 +111,6 @@ func selectAutoSwitchTarget(s *store.Store, deletingNames []string) (string, err
 		}
 	}
 
-	sort.Strings(candidates)
+	// candidates is already sorted (ListProfiles returns alphabetical order).
 	return candidates[0], nil
 }

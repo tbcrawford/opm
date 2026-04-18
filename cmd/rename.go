@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/tbcrawford/opm/internal/store"
 	"github.com/tbcrawford/opm/internal/symlink"
 )
@@ -50,7 +49,7 @@ func runRename(cmd *cobra.Command, args []string) error {
 
 	if wasActive {
 		newDir := s.ProfileDir(newName)
-		if err := symlink.SetAtomic(newDir, paths.OpencodeConfigDir()); err != nil {
+		if err := symlink.SetAtomic(newDir, s.OpencodDir()); err != nil {
 			// Rollback: move the directory back to its original name so OpenCode isn't broken.
 			if rerr := os.Rename(s.ProfileDir(newName), s.ProfileDir(oldName)); rerr != nil {
 				return fmt.Errorf("update active symlink: %w; rollback also failed: %v — profile directory is at %q", err, rerr, newName)

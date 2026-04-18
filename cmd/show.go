@@ -21,12 +21,15 @@ func init() {
 
 func runShow(cmd *cobra.Command, args []string) error {
 	s := newStore()
-	if name, err := s.ActiveProfile(); err == nil && name != "" {
+	name, err := s.ActiveProfile()
+	if err == nil && name != "" {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), name)
 		return nil
 	}
-	if name, err := s.GetCurrent(); err == nil && name != "" {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), name)
+	// Symlink is absent or broken — fall back to the current file but warn the user.
+	if cached, cerr := s.GetCurrent(); cerr == nil && cached != "" {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: symlink is broken or absent; reporting cached profile name\n")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), cached)
 		return nil
 	}
 	return fmt.Errorf("no active profile — run 'opm init' first")

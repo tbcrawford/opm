@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/paths"
 )
 
 var copyCmd = &cobra.Command{
@@ -26,10 +25,9 @@ func runCopy(cmd *cobra.Command, args []string) error {
 	if err := s.CopyProfile(src, dst); err != nil {
 		return err
 	}
-	dstDir := paths.ProfileDir(dst)
 	output.Success(cmd.OutOrStdout(),
 		"Copied "+output.ProfileName(src)+" → "+output.ProfileName(dst),
-		output.ShortenHome(dstDir)+"/",
+		output.ShortenHome(s.ProfileDir(dst))+"/",
 	)
 	return nil
 }

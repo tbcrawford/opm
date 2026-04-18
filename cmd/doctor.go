@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/paths"
 	"github.com/tbcrawford/opm/internal/symlink"
 )
 
@@ -26,8 +25,8 @@ func init() {
 func runDoctor(cmd *cobra.Command, args []string) error {
 	out := cmd.OutOrStdout()
 
-	opencodeDir := paths.OpencodeConfigDir()
 	s := newStore()
+	opencodeDir := s.OpencodDir()
 
 	warnings := 0
 	failures := 0
