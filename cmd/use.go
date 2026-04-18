@@ -14,7 +14,7 @@ var useCmd = &cobra.Command{
 	Short:             "Switch to a profile",
 	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: managedGuard,
-	ValidArgsFunction: profileNameCompletion,
+	ValidArgsFunction: singleArgProfileCompletion,
 	SilenceUsage:      true,
 	RunE:              runUse,
 }
@@ -43,7 +43,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	opencodeDir := s.OpencodDir()
+	opencodeDir := s.OpencodeDir()
 	if err := symlink.SetAtomic(profileDir, opencodeDir); err != nil {
 		return fmt.Errorf("switch profile: %w", err)
 	}

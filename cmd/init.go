@@ -35,7 +35,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	s := newStore()
-	opencodeDir := s.OpencodDir()
+	opencodeDir := s.OpencodeDir()
 	profileDir := s.ProfileDir(profileName)
 	profilesDirSlash := s.ProfilesDir() + string(filepath.Separator)
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,10 @@ func runShow(cmd *cobra.Command, args []string) error {
 	if err == nil && name != "" {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), name)
 		return nil
+	}
+	// If we got a real I/O error (not just "symlink absent"), surface it.
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("read active profile: %w", err)
 	}
 	// Symlink is absent or broken — fall back to the current file but warn the user.
 	if cached, cerr := s.GetCurrent(); cerr == nil && cached != "" {

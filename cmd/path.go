@@ -12,7 +12,7 @@ var pathCmd = &cobra.Command{
 	Short:             "Print the filesystem path to a profile directory",
 	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: managedGuard,
-	ValidArgsFunction: profileNameCompletion,
+	ValidArgsFunction: singleArgProfileCompletion,
 	SilenceUsage:      true,
 	RunE:              runPath,
 }

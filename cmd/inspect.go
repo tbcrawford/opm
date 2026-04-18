@@ -14,7 +14,7 @@ var inspectCmd = &cobra.Command{
 	Short:             "Show detailed information about a profile",
 	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: managedGuard,
-	ValidArgsFunction: profileNameCompletion,
+	ValidArgsFunction: singleArgProfileCompletion,
 	SilenceUsage:      true,
 	RunE:              runInspect,
 }

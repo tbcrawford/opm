@@ -48,8 +48,8 @@ func (s *Store) ProfileDir(name string) string {
 // ProfilesDir returns the absolute path to the profiles directory.
 func (s *Store) ProfilesDir() string { return s.profilesDir() }
 
-// OpencodDir returns the path to the managed opencode symlink (~/.config/opencode).
-func (s *Store) OpencodDir() string { return s.opencodeDir }
+// OpencodeDir returns the path to the managed opencode symlink (~/.config/opencode).
+func (s *Store) OpencodeDir() string { return s.opencodeDir }
 
 // Init creates the opm directory structure. Idempotent.
 func (s *Store) Init() error {
@@ -103,10 +103,12 @@ func (s *Store) ActiveProfile() (string, error) {
 // ListProfiles scans the profiles directory and returns all profiles.
 // Active profile is determined by Readlink on the managed symlink (per D-12).
 func (s *Store) ListProfiles() ([]Profile, error) {
-	active, err := s.ActiveProfile()
-	if err != nil {
-		// Non-fatal: just means we can't determine active profile.
-		active = ""
+	// Single Readlink call to determine active profile and detect dangling state.
+	activeTarget, readlinkErr := os.Readlink(s.opencodeDir)
+	profilesBase := s.profilesDir() + string(filepath.Separator)
+	active := ""
+	if readlinkErr == nil {
+		active = filepath.Base(activeTarget)
 	}
 
 	entries, err := os.ReadDir(s.profilesDir())
@@ -135,8 +137,6 @@ func (s *Store) ListProfiles() ([]Profile, error) {
 
 	// Check for dangling active profile: symlink points to a dir that no longer exists in profiles/.
 	// This happens when a user manually deletes a profile directory.
-	activeTarget, readlinkErr := os.Readlink(s.opencodeDir)
-	profilesBase := s.profilesDir() + string(filepath.Separator)
 	if readlinkErr == nil && strings.HasPrefix(activeTarget, profilesBase) {
 		activeName := filepath.Base(activeTarget)
 		found := false
@@ -249,6 +249,9 @@ func (s *Store) IsOpmManaged() (bool, error) {
 // The caller is responsible for updating the active symlink and current file
 // if oldName was the active profile (per D-04).
 func (s *Store) RenameProfile(oldName, newName string) error {
+	if err := ValidateName(oldName); err != nil {
+		return err
+	}
 	if err := ValidateName(newName); err != nil {
 		return err
 	}

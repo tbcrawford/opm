@@ -26,7 +26,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	out := cmd.OutOrStdout()
 
 	s := newStore()
-	opencodeDir := s.OpencodDir()
+	opencodeDir := s.OpencodeDir()
 
 	warnings := 0
 	failures := 0

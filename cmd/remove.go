@@ -64,7 +64,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		targetDir := s.ProfileDir(switchTarget)
-		if err := symlink.SetAtomic(targetDir, s.OpencodDir()); err != nil {
+		if err := symlink.SetAtomic(targetDir, s.OpencodeDir()); err != nil {
 			return fmt.Errorf("switch to %q: %w", switchTarget, err)
 		}
 		if err := s.SetCurrent(switchTarget); err != nil {

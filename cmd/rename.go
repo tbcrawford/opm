@@ -49,7 +49,7 @@ func runRename(cmd *cobra.Command, args []string) error {
 
 	if wasActive {
 		newDir := s.ProfileDir(newName)
-		if err := symlink.SetAtomic(newDir, s.OpencodDir()); err != nil {
+		if err := symlink.SetAtomic(newDir, s.OpencodeDir()); err != nil {
 			// Rollback: move the directory back to its original name so OpenCode isn't broken.
 			if rerr := os.Rename(s.ProfileDir(newName), s.ProfileDir(oldName)); rerr != nil {
 				return fmt.Errorf("update active symlink: %w; rollback also failed: %v — profile directory is at %q", err, rerr, newName)

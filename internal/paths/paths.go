@@ -1,6 +1,7 @@
 package paths
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -12,7 +13,9 @@ func homeDir() string {
 	if home := os.Getenv("HOME"); home != "" {
 		return home
 	}
-	panic("opm: cannot determine home directory: $HOME is not set and os.UserHomeDir() failed")
+	_, _ = fmt.Fprintln(os.Stderr, "opm: cannot determine home directory: $HOME is not set and os.UserHomeDir() failed")
+	os.Exit(1)
+	return "" // unreachable, satisfies compiler
 }
 
 // OpmDir returns ~/.config/opm — opm's own state directory.
