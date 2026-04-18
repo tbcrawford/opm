@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
@@ -28,6 +27,15 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 }
 
+func alreadyInitializedError(s *store.Store) error {
+	st, err := symlink.Inspect(s.OpencodeDir())
+	if err != nil {
+		return fmt.Errorf("inspect %s: %w", s.OpencodeDir(), err)
+	}
+	activeName := filepath.Base(st.Target)
+	return fmt.Errorf("already initialized (active: %s)", activeName)
+}
+
 func runInit(cmd *cobra.Command, args []string) error {
 	profileName := initProfileName
 	if err := store.ValidateName(profileName); err != nil {
@@ -37,30 +45,75 @@ func runInit(cmd *cobra.Command, args []string) error {
 	s := newStore()
 	opencodeDir := s.OpencodeDir()
 	profileDir := s.ProfileDir(profileName)
-	profilesDirSlash := s.ProfilesDir() + string(filepath.Separator)
 
 	st, err := symlink.Inspect(opencodeDir)
 	if err != nil {
 		return fmt.Errorf("inspect %s: %w", opencodeDir, err)
 	}
 
-	if st.IsSymlink && strings.HasPrefix(st.Target, profilesDirSlash) {
-		activeName := filepath.Base(st.Target)
-		return fmt.Errorf("already initialized (active: %s)", activeName)
-	}
-
-	if st.IsSymlink && !strings.HasPrefix(st.Target, profilesDirSlash) {
+	if st.IsSymlink {
+		managed, err := s.IsOpmManaged()
+		if err != nil {
+			return fmt.Errorf("cannot determine opm state: %w", err)
+		}
+		if managed {
+			return alreadyInitializedError(s)
+		}
 		return fmt.Errorf("~/.config/opencode is an unrecognized symlink\n\n  Back it up and remove it, then run 'opm init' again")
 	}
 
+	if st.Exists && !st.IsDir && !st.IsSymlink {
+		return fmt.Errorf("~/.config/opencode is not a directory or symlink\n\n  Back it up and remove it, then run 'opm init' again")
+	}
+
+	tmpSym := opencodeDir + ".opm-new"
+	profileIsDir := false
+	if _, tmpErr := os.Lstat(tmpSym); tmpErr == nil {
+		tmpSt, err := symlink.Inspect(tmpSym)
+		if err != nil {
+			return fmt.Errorf("inspect %s: %w", tmpSym, err)
+		}
+		profileExists := false
+		if profileInfo, err := os.Lstat(profileDir); err == nil {
+			profileExists = true
+			profileIsDir = profileInfo.IsDir()
+		} else if !os.IsNotExist(err) {
+			return fmt.Errorf("inspect %s: %w", profileDir, err)
+		}
+		if !profileExists || !tmpSt.IsSymlink || tmpSt.Target != profileDir {
+			return fmt.Errorf(
+				"stale interrupted init state detected\n\n  To recover:\n    remove ~/.config/opencode.opm-new\n    opm init",
+			)
+		}
+	}
+
 	if _, statErr := os.Lstat(profileDir); statErr == nil {
-		tmpSym := opencodeDir + ".opm-new"
 		if _, tmpErr := os.Lstat(tmpSym); tmpErr == nil {
+			if !profileIsDir {
+				return fmt.Errorf(
+					"partial initialization detected: profiles/%s exists but is not a directory\n\n"+
+						"  To recover:\n"+
+						"    rm -rf ~/.config/opm/profiles/%s\n"+
+						"    opm init",
+					profileName, profileName,
+				)
+			}
+			if st.Exists {
+				return fmt.Errorf(
+					"partial initialization detected: profiles/%s exists but ~/.config/opencode still exists\n\n"+
+						"  To recover:\n"+
+						"    inspect and back up ~/.config/opencode\n"+
+						"    remove ~/.config/opencode\n"+
+						"    remove ~/.config/opencode.opm-new\n"+
+						"    opm init",
+					profileName,
+				)
+			}
 			if err := os.Rename(tmpSym, opencodeDir); err != nil {
 				return fmt.Errorf("resume: atomic rename symlink: %w", err)
 			}
 			if err := s.SetCurrent(profileName); err != nil {
-				return fmt.Errorf("set current: %w", err)
+				warnCurrentCacheUpdate(cmd, err)
 			}
 			output.Success(cmd.OutOrStdout(), "Initialized opm", "Migrated ~/.config/opencode → profiles/"+profileName)
 			return nil
@@ -68,7 +121,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		// profile dir exists — only truly initialized if the symlink is also in place.
 		managed, mErr := s.IsOpmManaged()
 		if mErr == nil && managed {
-			return fmt.Errorf("already initialized (active: %s)", profileName)
+			return alreadyInitializedError(s)
 		}
 		return fmt.Errorf(
 			"partial initialization detected: profiles/%s exists but ~/.config/opencode is not managed by opm\n\n"+
@@ -86,8 +139,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 	w := cmd.OutOrStdout()
 
 	if st.IsDir {
-		tmpSym := opencodeDir + ".opm-new"
-		_ = os.Remove(tmpSym)
 		if err := symlink.SetAtomic(profileDir, tmpSym); err != nil {
 			return fmt.Errorf("step 1 — create temp symlink: %w", err)
 		}
@@ -99,7 +150,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("step 3 — install symlink: %w", err)
 		}
 		if err := s.SetCurrent(profileName); err != nil {
-			return fmt.Errorf("set current: %w", err)
+			warnCurrentCacheUpdate(cmd, err)
 		}
 		output.Success(w, "Initialized opm", "Migrated ~/.config/opencode → profiles/"+profileName)
 	} else {
@@ -110,7 +161,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("install symlink: %w", err)
 		}
 		if err := s.SetCurrent(profileName); err != nil {
-			return fmt.Errorf("set current: %w", err)
+			warnCurrentCacheUpdate(cmd, err)
 		}
 		output.Success(w, "Initialized opm",
 			"Created "+profileName+" profile at "+output.ShortenHome(profileDir)+"/")

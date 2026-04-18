@@ -11,6 +11,9 @@ opm
 # Visual brainstorming sessions
 .superpowers/
 
+# Git worktrees
+.worktrees/
+
 ### VisualStudioCode
 .vscode/*
 

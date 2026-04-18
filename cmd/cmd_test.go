@@ -22,6 +22,20 @@ type cmdHarness struct {
 	opencodeDir string
 }
 
+func (h *cmdHarness) currentPath() string {
+	return filepath.Join(filepath.Dir(h.store.ProfilesDir()), "current")
+}
+
+func (h *cmdHarness) breakCurrentPath(t *testing.T) {
+	t.Helper()
+	currentPath := h.currentPath()
+	err := os.Remove(currentPath)
+	if err != nil && !os.IsNotExist(err) {
+		require.NoError(t, err)
+	}
+	require.NoError(t, os.MkdirAll(currentPath, 0o755))
+}
+
 func newHarness(t *testing.T) *cmdHarness {
 	t.Helper()
 	root := t.TempDir()
@@ -103,7 +117,53 @@ func TestInit_AlreadyInitialized(t *testing.T) {
 	h.mustInit(t)
 	_, _, err := h.run("init")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "already initialized")
+	assert.Equal(t, "already initialized (active: default)", err.Error())
+}
+
+func TestInit_AlreadyInitialized_WithRelativeManagedSymlink(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.store.Init())
+	require.NoError(t, os.MkdirAll(h.store.ProfileDir("work"), 0o755))
+
+	rel, err := filepath.Rel(filepath.Dir(h.opencodeDir), h.store.ProfileDir("work"))
+	require.NoError(t, err)
+	require.NoError(t, os.Symlink(rel, h.opencodeDir))
+
+	_, _, err = h.run("init")
+	require.Error(t, err)
+	assert.Equal(t, "already initialized (active: work)", err.Error())
+}
+
+func TestInit_AlreadyInitialized_WithExistingRequestedProfileReportsRealActiveProfile(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	require.NoError(t, os.MkdirAll(h.store.ProfileDir("work"), 0o755))
+
+	_, _, err := h.run("init", "--as", "work")
+	require.Error(t, err)
+	assert.Equal(t, "already initialized (active: default)", err.Error())
+}
+
+func TestAlreadyInitializedError_UsesRealActiveProfile(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	require.NoError(t, os.MkdirAll(h.store.ProfileDir("work"), 0o755))
+
+	err := alreadyInitializedError(h.store)
+	require.Error(t, err)
+	assert.Equal(t, "already initialized (active: default)", err.Error())
+}
+
+func TestAlreadyInitializedError_UsesDanglingManagedTargetName(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+
+	defaultDir := h.store.ProfileDir("default")
+	require.NoError(t, os.Remove(defaultDir))
+
+	err := alreadyInitializedError(h.store)
+	require.Error(t, err)
+	assert.Equal(t, "already initialized (active: default)", err.Error())
 }
 
 func TestInit_WithExistingOpencodeDir(t *testing.T) {
@@ -125,6 +185,143 @@ func TestInit_WithExistingOpencodeDir(t *testing.T) {
 	assert.True(t, managed)
 }
 
+func TestInit_RefusesRegularFileAtOpencodePath(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, os.WriteFile(h.opencodeDir, []byte("not a directory"), 0o644))
+
+	_, _, err := h.run("init")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "~/.config/opencode is not a directory or symlink")
+	assert.Contains(t, err.Error(), "Back it up and remove it")
+	assert.NoDirExists(t, h.store.ProfileDir("default"))
+}
+
+func TestInit_RejectsStaleResumeSymlink(t *testing.T) {
+	h := newHarness(t)
+	profileDir := h.store.ProfileDir("default")
+	require.NoError(t, os.MkdirAll(profileDir, 0o755))
+
+	foreignDir := filepath.Join(t.TempDir(), "foreign")
+	require.NoError(t, os.MkdirAll(foreignDir, 0o755))
+	require.NoError(t, os.Symlink(foreignDir, h.opencodeDir+".opm-new"))
+
+	_, _, err := h.run("init")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stale interrupted init state detected")
+	assert.Contains(t, err.Error(), "remove ~/.config/opencode.opm-new")
+
+	tmpTarget, readErr := os.Readlink(h.opencodeDir + ".opm-new")
+	require.NoError(t, readErr)
+	assert.Equal(t, foreignDir, tmpTarget)
+	_, statErr := os.Lstat(h.opencodeDir)
+	assert.ErrorIs(t, statErr, os.ErrNotExist)
+}
+
+func TestInit_RejectsStaleTempSymlinkOnFreshPath(t *testing.T) {
+	h := newHarness(t)
+
+	foreignDir := filepath.Join(t.TempDir(), "foreign")
+	require.NoError(t, os.MkdirAll(foreignDir, 0o755))
+	require.NoError(t, os.Symlink(foreignDir, h.opencodeDir+".opm-new"))
+
+	_, _, err := h.run("init")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stale interrupted init state detected")
+	assert.Contains(t, err.Error(), "remove ~/.config/opencode.opm-new")
+
+	tmpTarget, readErr := os.Readlink(h.opencodeDir + ".opm-new")
+	require.NoError(t, readErr)
+	assert.Equal(t, foreignDir, tmpTarget)
+	_, statErr := os.Lstat(h.opencodeDir)
+	assert.ErrorIs(t, statErr, os.ErrNotExist)
+	assert.NoDirExists(t, h.store.ProfileDir("default"))
+}
+
+func TestInit_RejectsMalformedTempState(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, os.WriteFile(h.opencodeDir+".opm-new", []byte("bad temp state"), 0o644))
+
+	_, _, err := h.run("init")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stale interrupted init state detected")
+	assert.Contains(t, err.Error(), "remove ~/.config/opencode.opm-new")
+
+	info, statErr := os.Lstat(h.opencodeDir + ".opm-new")
+	require.NoError(t, statErr)
+	assert.False(t, info.Mode()&os.ModeSymlink != 0)
+	_, opencodeErr := os.Lstat(h.opencodeDir)
+	assert.ErrorIs(t, opencodeErr, os.ErrNotExist)
+	assert.NoDirExists(t, h.store.ProfileDir("default"))
+}
+
+func TestInit_ResumesMatchingTempSymlink(t *testing.T) {
+	h := newHarness(t)
+	profileDir := h.store.ProfileDir("default")
+	require.NoError(t, os.MkdirAll(profileDir, 0o755))
+	require.NoError(t, os.Symlink(profileDir, h.opencodeDir+".opm-new"))
+
+	out, _, err := h.run("init")
+	require.NoError(t, err)
+	assert.Contains(t, out, "Initialized opm")
+
+	target, readErr := os.Readlink(h.opencodeDir)
+	require.NoError(t, readErr)
+	assert.Equal(t, profileDir, target)
+	_, statErr := os.Lstat(h.opencodeDir + ".opm-new")
+	assert.ErrorIs(t, statErr, os.ErrNotExist)
+
+	active, activeErr := h.store.ActiveProfile()
+	require.NoError(t, activeErr)
+	assert.Equal(t, "default", active)
+}
+
+func TestInit_RejectsResumeTargetThatIsNotDirectory(t *testing.T) {
+	h := newHarness(t)
+	profileDir := h.store.ProfileDir("default")
+	require.NoError(t, os.MkdirAll(filepath.Dir(profileDir), 0o755))
+	require.NoError(t, os.WriteFile(profileDir, []byte("not a profile directory"), 0o644))
+	require.NoError(t, os.Symlink(profileDir, h.opencodeDir+".opm-new"))
+
+	_, _, err := h.run("init")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "partial initialization detected")
+	assert.Contains(t, err.Error(), "rm -rf ~/.config/opm/profiles/default")
+
+	info, statErr := os.Lstat(profileDir)
+	require.NoError(t, statErr)
+	assert.False(t, info.IsDir())
+	_, opencodeErr := os.Lstat(h.opencodeDir)
+	assert.ErrorIs(t, opencodeErr, os.ErrNotExist)
+	_, tmpErr := os.Lstat(h.opencodeDir + ".opm-new")
+	require.NoError(t, tmpErr)
+}
+
+func TestInit_RejectsResumeWhenOpencodeDirStillExists(t *testing.T) {
+	h := newHarness(t)
+	profileDir := h.store.ProfileDir("default")
+	require.NoError(t, os.MkdirAll(profileDir, 0o755))
+	require.NoError(t, os.Symlink(profileDir, h.opencodeDir+".opm-new"))
+	require.NoError(t, os.MkdirAll(h.opencodeDir, 0o755))
+
+	_, _, err := h.run("init")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "partial initialization detected")
+	assert.Contains(t, err.Error(), "~/.config/opencode still exists")
+	assert.Contains(t, err.Error(), "inspect and back up ~/.config/opencode")
+	assert.Contains(t, err.Error(), "remove ~/.config/opencode")
+	assert.Contains(t, err.Error(), "remove ~/.config/opencode.opm-new")
+	assert.NotContains(t, err.Error(), "rm -rf ~/.config/opm/profiles/default")
+
+	info, statErr := os.Lstat(h.opencodeDir)
+	require.NoError(t, statErr)
+	assert.True(t, info.IsDir())
+	_, tmpErr := os.Lstat(h.opencodeDir + ".opm-new")
+	require.NoError(t, tmpErr)
+	active, activeErr := h.store.ActiveProfile()
+	require.NoError(t, activeErr)
+	assert.Empty(t, active)
+}
+
 func TestInit_CustomAsName(t *testing.T) {
 	h := newHarness(t)
 	_, _, err := h.run("init", "--as", "work")
@@ -133,6 +330,21 @@ func TestInit_CustomAsName(t *testing.T) {
 	active, err := h.store.ActiveProfile()
 	require.NoError(t, err)
 	assert.Equal(t, "work", active)
+}
+
+func TestInit_CurrentWriteFailureWarnsButSucceeds(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.store.Init())
+	h.breakCurrentPath(t)
+
+	out, stderr, err := h.run("init")
+	require.NoError(t, err)
+	assert.Contains(t, out, "Initialized opm")
+	assert.Contains(t, stderr, "warning: updated live symlink state, but failed to update current cache")
+
+	target, readErr := os.Readlink(h.opencodeDir)
+	require.NoError(t, readErr)
+	assert.Equal(t, h.store.ProfileDir("default"), target)
 }
 
 // ── use ───────────────────────────────────────────────────────────────────────
@@ -183,6 +395,23 @@ func TestUse_RequiresInit(t *testing.T) {
 	_, _, err := h.run("use", "default")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not managed by opm")
+}
+
+func TestUse_CurrentWriteFailureWarnsButSucceeds(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	_, _, err := h.run("create", "work")
+	require.NoError(t, err)
+	h.breakCurrentPath(t)
+
+	out, stderr, err := h.run("use", "work")
+	require.NoError(t, err)
+	assert.Contains(t, out, "work")
+	assert.Contains(t, stderr, "warning: updated live symlink state, but failed to update current cache")
+
+	target, readErr := os.Readlink(h.opencodeDir)
+	require.NoError(t, readErr)
+	assert.Equal(t, h.store.ProfileDir("work"), target)
 }
 
 // ── create ────────────────────────────────────────────────────────────────────
@@ -277,17 +506,32 @@ func TestShow_FallbackWarnsOnBrokenSymlink(t *testing.T) {
 	h := newHarness(t)
 	h.mustInit(t)
 
-	// Point the symlink at a nonexistent profile directory to create a dangling symlink.
-	// ActiveProfile() will still return the base name from Readlink (no error), so show
-	// still prints the name — but it's the dangling target's basename.
-	goneDir := h.store.ProfileDir("default") + "_gone"
+	// Point the symlink at a nonexistent profile directory to create a managed dangling symlink.
+	goneDir := h.store.ProfileDir("default")
+	require.NoError(t, os.RemoveAll(goneDir))
 	require.NoError(t, os.Remove(h.opencodeDir))
 	require.NoError(t, os.Symlink(goneDir, h.opencodeDir))
+	require.NoError(t, h.store.SetCurrent("default"))
 
-	out, _, err := h.run("show")
+	out, stderr, err := h.run("show")
 	require.NoError(t, err)
-	// ActiveProfile reads the symlink target and returns its base name even when dangling.
-	assert.Equal(t, "default_gone\n", out)
+	assert.Equal(t, "default\n", out)
+	assert.Contains(t, stderr, "warning: symlink is broken or absent")
+}
+
+func TestShow_BrokenSymlinkWithoutCurrentErrors(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+
+	goneDir := h.store.ProfileDir("default")
+	require.NoError(t, os.RemoveAll(goneDir))
+	require.NoError(t, os.Remove(h.opencodeDir))
+	require.NoError(t, os.Symlink(goneDir, h.opencodeDir))
+	require.NoError(t, h.store.SetCurrent(""))
+
+	_, _, err := h.run("show")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no active profile")
 }
 
 func TestShow_FallbackWhenSymlinkMissingUsesCurrent(t *testing.T) {
@@ -301,6 +545,18 @@ func TestShow_FallbackWhenSymlinkMissingUsesCurrent(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "default\n", out)
 	assert.Contains(t, stderr, "warning: symlink is broken or absent")
+}
+
+func TestShow_AbsentSymlinkWithoutCurrentErrors(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+
+	require.NoError(t, os.Remove(h.opencodeDir))
+	require.NoError(t, h.store.SetCurrent(""))
+
+	_, _, err := h.run("show")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no active profile")
 }
 
 func TestShow_ForeignSymlinkRejected(t *testing.T) {
@@ -401,6 +657,24 @@ func TestRemove_NonexistentAborts(t *testing.T) {
 	assert.DirExists(t, h.store.ProfileDir("real"))
 }
 
+func TestRemove_ForceCurrentWriteFailureWarnsButSucceeds(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	_, _, err := h.run("create", "work")
+	require.NoError(t, err)
+	h.breakCurrentPath(t)
+
+	out, stderr, err := h.run("remove", "--force", "default")
+	require.NoError(t, err)
+	assert.Contains(t, out, "Removed profile")
+	assert.Contains(t, stderr, "warning: updated live symlink state, but failed to update current cache")
+	assert.NoDirExists(t, h.store.ProfileDir("default"))
+
+	target, readErr := os.Readlink(h.opencodeDir)
+	require.NoError(t, readErr)
+	assert.Equal(t, h.store.ProfileDir("work"), target)
+}
+
 // ── rename ────────────────────────────────────────────────────────────────────
 
 func TestRename_Inactive(t *testing.T) {
@@ -433,6 +707,23 @@ func TestRename_InvalidNewName(t *testing.T) {
 
 	_, _, err := h.run("rename", "default", "../evil")
 	require.Error(t, err)
+}
+
+func TestRename_ActiveCurrentWriteFailureWarnsButSucceeds(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	h.breakCurrentPath(t)
+
+	out, stderr, err := h.run("rename", "default", "primary")
+	require.NoError(t, err)
+	assert.Contains(t, out, "Renamed")
+	assert.Contains(t, stderr, "warning: updated live symlink state, but failed to update current cache")
+	assert.NoDirExists(t, h.store.ProfileDir("default"))
+	assert.DirExists(t, h.store.ProfileDir("primary"))
+
+	target, readErr := os.Readlink(h.opencodeDir)
+	require.NoError(t, readErr)
+	assert.Equal(t, h.store.ProfileDir("primary"), target)
 }
 
 // ── copy ──────────────────────────────────────────────────────────────────────
@@ -584,4 +875,12 @@ func TestDoctor_ConsistencyMismatch(t *testing.T) {
 	// Consistency mismatch is a warning, not a failure — doctor should succeed.
 	require.NoError(t, err)
 	assert.Contains(t, out, "warning") // Consistency section appears
+}
+
+func TestRootHelp_IncludesCompletionCommand(t *testing.T) {
+	h := newHarness(t)
+
+	out, _, err := h.run("--help")
+	require.NoError(t, err)
+	assert.Contains(t, out, "completion")
 }

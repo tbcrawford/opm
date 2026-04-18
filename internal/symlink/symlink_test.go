@@ -1,8 +1,12 @@
 package symlink_test
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -136,4 +140,89 @@ func TestSetAtomic_LeftoverTmpCleaned(t *testing.T) {
 	got, err := os.Readlink(link)
 	require.NoError(t, err)
 	assert.Equal(t, target, got)
+}
+
+func TestSetAtomic_LeftoverRandomizedTmpCleaned(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "profile")
+	require.NoError(t, os.Mkdir(target, 0o755))
+	link := filepath.Join(dir, "opencode")
+
+	liveProcess := exec.Command("sleep", "30")
+	require.NoError(t, liveProcess.Start())
+	t.Cleanup(func() {
+		_ = liveProcess.Process.Kill()
+		_, _ = liveProcess.Process.Wait()
+	})
+
+	malformed := filepath.Join(dir, ".opm-tmp-opencode-stale-1")
+	stalePID := filepath.Join(dir, ".opm-tmp-opencode-999999-stale")
+	livePID := filepath.Join(dir, ".opm-tmp-opencode-"+strconv.Itoa(liveProcess.Process.Pid)+"-stale")
+	require.NoError(t, os.Symlink("/some/stale/target/malformed", malformed))
+	require.NoError(t, os.Symlink("/some/stale/target/deadpid", stalePID))
+	require.NoError(t, os.Symlink("/some/stale/target/livepid", livePID))
+
+	err := symlink.SetAtomic(target, link)
+	require.NoError(t, err)
+
+	got, err := os.Readlink(link)
+	require.NoError(t, err)
+	assert.Equal(t, target, got)
+
+	_, err = os.Lstat(malformed)
+	assert.True(t, os.IsNotExist(err))
+
+	_, err = os.Lstat(stalePID)
+	assert.True(t, os.IsNotExist(err))
+
+	_, err = os.Lstat(livePID)
+	require.NoError(t, err)
+}
+
+func TestSetAtomic_ConcurrentCallsShareNoTempName(t *testing.T) {
+	dir := t.TempDir()
+	link := filepath.Join(dir, "opencode")
+
+	const rounds = 25
+	const workers = 16
+
+	for round := 0; round < rounds; round++ {
+		targets := make([]string, workers)
+		for worker := 0; worker < workers; worker++ {
+			target := filepath.Join(dir, fmt.Sprintf("profile-%d-%d", round, worker))
+			require.NoError(t, os.Mkdir(target, 0o755))
+			targets[worker] = target
+		}
+
+		start := make(chan struct{})
+		results := make(chan error, workers)
+
+		var wg sync.WaitGroup
+		for worker := 0; worker < workers; worker++ {
+			wg.Add(1)
+			go func(target string) {
+				defer wg.Done()
+				<-start
+				results <- symlink.SetAtomic(target, link)
+			}(targets[worker])
+		}
+
+		close(start)
+		wg.Wait()
+		close(results)
+
+		for err := range results {
+			require.NoError(t, err)
+		}
+
+		got, err := os.Readlink(link)
+		require.NoError(t, err)
+		assert.Contains(t, targets, got)
+	}
+
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	for _, entry := range entries {
+		assert.NotContains(t, entry.Name(), ".opm-tmp-", "temp file should be cleaned up after concurrent success")
+	}
 }

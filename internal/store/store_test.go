@@ -187,6 +187,15 @@ func TestStore_GetProfile_NotExist(t *testing.T) {
 	assert.Contains(t, err.Error(), "does not exist")
 }
 
+func TestStore_GetProfile_RejectsTraversalName(t *testing.T) {
+	st, _ := newTestStore(t)
+	require.NoError(t, st.Init())
+
+	_, err := st.GetProfile("../evil")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid profile name")
+}
+
 // ---- DeleteProfile ----
 
 func TestStore_DeleteProfile_NonActive(t *testing.T) {
@@ -238,6 +247,15 @@ func TestStore_DeleteProfile_NotExist(t *testing.T) {
 	assert.Contains(t, err.Error(), "does not exist")
 }
 
+func TestStore_DeleteProfile_RejectsTraversalName(t *testing.T) {
+	st, _ := newTestStore(t)
+	require.NoError(t, st.Init())
+
+	err := st.DeleteProfile("../evil", true)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid profile name")
+}
+
 // ---- IsOpmManaged ----
 
 func TestStore_IsOpmManaged_True(t *testing.T) {
@@ -274,6 +292,29 @@ func TestStore_IsOpmManaged_NotExist(t *testing.T) {
 	assert.False(t, managed)
 }
 
+func TestStore_IsOpmManaged_PreInitMissingProfilesReturnsFalse(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+
+	aliasParent := t.TempDir()
+	aliasRoot := filepath.Join(aliasParent, "opm-root")
+	require.NoError(t, os.Symlink(t.TempDir(), aliasRoot))
+	require.NoError(t, os.Symlink(filepath.Join(aliasRoot, "profiles", "work"), opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.False(t, managed)
+}
+
+func TestStore_IsOpmManaged_PreInitDirectDanglingTargetReturnsFalse(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+
+	require.NoError(t, os.Symlink(st.ProfileDir("work"), opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.False(t, managed)
+}
+
 func TestStore_IsOpmManaged_ForeignSymlink(t *testing.T) {
 	st, opencodeDir := newTestStore(t)
 	require.NoError(t, st.Init())
@@ -285,6 +326,266 @@ func TestStore_IsOpmManaged_ForeignSymlink(t *testing.T) {
 	managed, err := st.IsOpmManaged()
 	require.NoError(t, err)
 	assert.False(t, managed)
+}
+
+func TestStore_IsOpmManaged_RejectsEscapingTarget(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+
+	root := filepath.Dir(st.ProfilesDir())
+	outside := filepath.Join(root, "outside")
+	require.NoError(t, os.MkdirAll(outside, 0o755))
+
+	forged := st.ProfilesDir() + string(filepath.Separator) + "work" + string(filepath.Separator) + ".." + string(filepath.Separator) + ".." + string(filepath.Separator) + "outside"
+	require.NoError(t, os.Symlink(forged, opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.False(t, managed)
+}
+
+func TestStore_IsOpmManaged_RelativeTarget(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+
+	rel, err := filepath.Rel(filepath.Dir(opencodeDir), st.ProfileDir("work"))
+	require.NoError(t, err)
+	require.NoError(t, os.Symlink(rel, opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.True(t, managed)
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "work", active)
+}
+
+func TestStore_ActiveProfile_ForeignSymlinkReturnsEmpty(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+
+	foreign := filepath.Join(t.TempDir(), "work")
+	require.NoError(t, os.MkdirAll(foreign, 0o755))
+	require.NoError(t, os.Symlink(foreign, opencodeDir))
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "", active)
+}
+
+func TestStore_ActiveProfile_DanglingManagedSymlinkReturnsEmpty(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+	require.NoError(t, os.Symlink(st.ProfileDir("work"), opencodeDir))
+	require.NoError(t, os.RemoveAll(st.ProfileDir("work")))
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "", active)
+}
+
+func TestStore_ProfileDirSymlinkEscapingStoreIsNotManaged(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+
+	outside := filepath.Join(t.TempDir(), "outside")
+	require.NoError(t, os.MkdirAll(outside, 0o755))
+	require.NoError(t, os.RemoveAll(st.ProfileDir("work")))
+	require.NoError(t, os.Symlink(outside, st.ProfileDir("work")))
+	require.NoError(t, os.Symlink(st.ProfileDir("work"), opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.False(t, managed)
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "", active)
+}
+
+func TestStore_ProfileDirSymlinkWithinStoreIsNotManaged(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+	require.NoError(t, st.CreateProfile("personal"))
+	require.NoError(t, os.RemoveAll(st.ProfileDir("work")))
+	require.NoError(t, os.Symlink(st.ProfileDir("personal"), st.ProfileDir("work")))
+	require.NoError(t, os.Symlink(st.ProfileDir("work"), opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.False(t, managed)
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "", active)
+
+	profiles, err := st.ListProfiles()
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+
+	byName := make(map[string]store.Profile)
+	for _, p := range profiles {
+		byName[p.Name] = p
+	}
+
+	require.Contains(t, byName, "personal")
+	assert.False(t, byName["personal"].Active)
+
+	err = st.DeleteProfile("personal", false)
+	assert.NoError(t, err)
+}
+
+func TestStore_DanglingProfileEntrySymlinkIsNotManaged(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+
+	missing := filepath.Join(t.TempDir(), "missing-target")
+	require.NoError(t, os.RemoveAll(st.ProfileDir("work")))
+	require.NoError(t, os.Symlink(missing, st.ProfileDir("work")))
+	require.NoError(t, os.Symlink(st.ProfileDir("work"), opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.False(t, managed)
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "", active)
+
+	profiles, err := st.ListProfiles()
+	require.NoError(t, err)
+	assert.Empty(t, profiles)
+}
+
+func TestStore_ForeignDanglingSymlinkIsNotManaged(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+
+	foreignMissing := filepath.Join(t.TempDir(), "work")
+	require.NoError(t, os.Symlink(foreignMissing, opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.False(t, managed)
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "", active)
+
+	profiles, err := st.ListProfiles()
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+
+	byName := make(map[string]store.Profile)
+	for _, p := range profiles {
+		byName[p.Name] = p
+	}
+
+	require.Contains(t, byName, "work")
+	assert.False(t, byName["work"].Active)
+	assert.False(t, byName["work"].Dangling)
+}
+
+func TestStore_ManagedAliasAncestorPathIsTrusted(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+
+	realRoot := filepath.Dir(st.ProfilesDir())
+	aliasParent := t.TempDir()
+	aliasRoot := filepath.Join(aliasParent, "opm-root")
+	require.NoError(t, os.Symlink(realRoot, aliasRoot))
+	require.NoError(t, os.Symlink(filepath.Join(aliasRoot, "profiles", "work"), opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.True(t, managed)
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "work", active)
+
+	profiles, err := st.ListProfiles()
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+
+	byName := make(map[string]store.Profile)
+	for _, p := range profiles {
+		byName[p.Name] = p
+	}
+
+	require.Contains(t, byName, "work")
+	assert.True(t, byName["work"].Active)
+}
+
+func TestStore_ProfileEntryRegularFileIsNotManaged(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+	require.NoError(t, os.RemoveAll(st.ProfileDir("work")))
+	require.NoError(t, os.WriteFile(st.ProfileDir("work"), []byte("not a directory"), 0o644))
+	require.NoError(t, os.Symlink(st.ProfileDir("work"), opencodeDir))
+
+	managed, err := st.IsOpmManaged()
+	require.NoError(t, err)
+	assert.False(t, managed)
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "", active)
+
+	profiles, err := st.ListProfiles()
+	require.NoError(t, err)
+	assert.Empty(t, profiles)
+}
+
+func TestStore_ListProfiles_ForeignSymlinkDoesNotMarkActive(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+	require.NoError(t, st.CreateProfile("personal"))
+
+	foreign := filepath.Join(t.TempDir(), "work")
+	require.NoError(t, os.MkdirAll(foreign, 0o755))
+	require.NoError(t, os.Symlink(foreign, opencodeDir))
+
+	profiles, err := st.ListProfiles()
+	require.NoError(t, err)
+	require.Len(t, profiles, 2)
+
+	byName := make(map[string]store.Profile)
+	for _, p := range profiles {
+		byName[p.Name] = p
+	}
+
+	require.Contains(t, byName, "work")
+	require.Contains(t, byName, "personal")
+	assert.False(t, byName["work"].Active)
+	assert.False(t, byName["personal"].Active)
+}
+
+func TestStore_DeleteProfile_ForeignSymlinkWithSameBasenameAllowsDeletion(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+	require.NoError(t, st.Init())
+	require.NoError(t, st.CreateProfile("work"))
+
+	foreign := filepath.Join(t.TempDir(), "work")
+	require.NoError(t, os.MkdirAll(foreign, 0o755))
+	require.NoError(t, os.Symlink(foreign, opencodeDir))
+
+	err := st.DeleteProfile("work", false)
+	assert.NoError(t, err)
+
+	_, statErr := os.Lstat(st.ProfileDir("work"))
+	assert.True(t, os.IsNotExist(statErr))
 }
 
 // ---- Dangling detection ----
@@ -510,6 +811,22 @@ func TestCopyProfile_InvalidDstName(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid profile name")
 }
 
+func TestCopyProfile_SymlinkSourceRejected(t *testing.T) {
+	root := t.TempDir()
+	s := store.New(root, t.TempDir())
+	require.NoError(t, s.Init())
+	require.NoError(t, s.CreateProfile("src"))
+	require.NoError(t, os.RemoveAll(s.ProfileDir("src")))
+
+	target := filepath.Join(t.TempDir(), "foreign")
+	require.NoError(t, os.MkdirAll(target, 0o755))
+	require.NoError(t, os.Symlink(target, s.ProfileDir("src")))
+
+	err := s.CopyProfile("src", "dst")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "context \"src\" is not a directory")
+}
+
 func TestReset_PreservesProfiles(t *testing.T) {
 	root := t.TempDir()
 	opencodeDir := filepath.Join(t.TempDir(), "opencode")
@@ -528,4 +845,49 @@ func TestReset_PreservesProfiles(t *testing.T) {
 	// Both profiles still exist.
 	assert.DirExists(t, s.ProfileDir("default"))
 	assert.DirExists(t, s.ProfileDir("work"))
+}
+
+func TestReset_RelativeManagedTargetSucceeds(t *testing.T) {
+	root := t.TempDir()
+	opencodeDir := filepath.Join(t.TempDir(), "opencode")
+
+	s := store.New(root, opencodeDir)
+	require.NoError(t, s.Init())
+	require.NoError(t, s.CreateProfile("default"))
+	profileDir := s.ProfileDir("default")
+	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "opencode.json"), []byte(`{}`), 0o644))
+
+	rel, err := filepath.Rel(filepath.Dir(opencodeDir), profileDir)
+	require.NoError(t, err)
+	require.NoError(t, os.Symlink(rel, opencodeDir))
+	require.NoError(t, s.SetCurrent("default"))
+
+	require.NoError(t, s.Reset())
+
+	info, err := os.Lstat(opencodeDir)
+	require.NoError(t, err)
+	assert.False(t, info.Mode()&os.ModeSymlink != 0)
+	assert.True(t, info.IsDir())
+	assert.FileExists(t, filepath.Join(opencodeDir, "opencode.json"))
+	_, err = os.Stat(filepath.Join(root, "current"))
+	assert.True(t, os.IsNotExist(err))
+}
+
+func TestReset_RejectsEscapingManagedTarget(t *testing.T) {
+	root := t.TempDir()
+	opencodeDir := filepath.Join(t.TempDir(), "opencode")
+
+	s := store.New(root, opencodeDir)
+	require.NoError(t, s.Init())
+	require.NoError(t, s.CreateProfile("work"))
+
+	outside := filepath.Join(t.TempDir(), "outside")
+	require.NoError(t, os.MkdirAll(outside, 0o755))
+	require.NoError(t, os.RemoveAll(s.ProfileDir("work")))
+	require.NoError(t, os.Symlink(outside, s.ProfileDir("work")))
+	require.NoError(t, os.Symlink(s.ProfileDir("work"), opencodeDir))
+
+	err := s.Reset()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not managed by opm")
 }
