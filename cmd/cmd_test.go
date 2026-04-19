@@ -803,6 +803,16 @@ func TestRemove_Completion_ExcludesAlreadySelectedProfiles(t *testing.T) {
 	assert.ElementsMatch(t, []string{"default", "personal"}, names)
 }
 
+func TestRemove_Completion_NoRemainingCandidatesIsNotError(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	h.useStoreFactory(t)
+
+	names, directive := removeCmd.ValidArgsFunction(removeCmd, []string{"default"}, "")
+	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
+	assert.Empty(t, names)
+}
+
 // ── path ──────────────────────────────────────────────────────────────────────
 
 func TestPath_PrintsPath(t *testing.T) {

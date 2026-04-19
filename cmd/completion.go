@@ -1,6 +1,8 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 // profileNameCompletion is a ValidArgsFunction for commands that take profile name arguments.
 // Returns existing (non-dangling) profile names for shell tab completion.
@@ -23,29 +25,17 @@ func completeProfileNames(args []string, maxArgs int, excludeSelected bool) ([]s
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	selected := make(map[string]bool, len(args))
+	var selected []string
 	if excludeSelected {
-		for _, arg := range args {
-			selected[arg] = true
-		}
+		selected = args
 	}
 
-	s := newStore()
-	managed, err := s.IsOpmManaged()
-	if err != nil || !managed {
-		return nil, cobra.ShellCompDirectiveError
-	}
-
-	profiles, err := s.ListProfiles()
+	names, managed, err := newStore().CompletableProfiles(selected)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
-
-	var names []string
-	for _, p := range profiles {
-		if !p.Dangling && !selected[p.Name] {
-			names = append(names, p.Name)
-		}
+	if !managed {
+		return nil, cobra.ShellCompDirectiveError
 	}
 	return names, cobra.ShellCompDirectiveNoFileComp
 }
