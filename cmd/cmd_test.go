@@ -659,6 +659,33 @@ func TestRemove_ForceCurrentWriteFailureWarnsButSucceeds(t *testing.T) {
 	assert.Equal(t, h.store.ProfileDir("work"), target)
 }
 
+func TestRemove_ForceDeleteFailureStillWarnsAfterAutoSwitch(t *testing.T) {
+	h := newHarness(t)
+	h.mustInit(t)
+	_, _, err := h.run("create", "work")
+	require.NoError(t, err)
+	h.breakCurrentPath(t)
+
+	profilesDir := h.store.ProfilesDir()
+	info, statErr := os.Stat(profilesDir)
+	require.NoError(t, statErr)
+	require.NoError(t, os.Chmod(profilesDir, 0o555))
+	t.Cleanup(func() { _ = os.Chmod(profilesDir, info.Mode()) })
+
+	_, stderr, err := h.run("remove", "--force", "default")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "⚠ Updated live symlink state")
+	assert.Contains(t, stderr, "failed to update current cache")
+	assert.DirExists(t, h.store.ProfileDir("default"))
+
+	target, readErr := os.Readlink(h.opencodeDir)
+	require.NoError(t, readErr)
+	assert.Equal(t, h.store.ProfileDir("work"), target)
+	active, activeErr := h.store.ActiveProfile()
+	require.NoError(t, activeErr)
+	assert.Equal(t, "work", active)
+}
+
 // ── rename ────────────────────────────────────────────────────────────────────
 
 func TestRename_Inactive(t *testing.T) {
