@@ -47,6 +47,14 @@ func Failure(w io.Writer, msg string, detail ...string) {
 	}
 }
 
+// Warning prints a yellow ⚠ line followed by optional dim detail lines.
+func Warning(w io.Writer, msg string, detail ...string) {
+	_, _ = fmt.Fprintf(w, "%s %s\n", yellow.Sprint("⚠"), msg)
+	for _, d := range detail {
+		_, _ = fmt.Fprintf(w, "%s\n", dim.Sprintf("  %s", d))
+	}
+}
+
 // Error prints a red ✗ first line, then remaining lines with dim indent preserved.
 // Used by Execute() to format all command errors uniformly.
 func Error(w io.Writer, msg string) {

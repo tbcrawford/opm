@@ -50,7 +50,7 @@ func init() {
 	registerHelp(rootCmd)
 }
 
-// managedGuard blocks context subcommands if ~/.config/opencode is not managed by opm.
+// managedGuard blocks profile subcommands if ~/.config/opencode is not managed by opm.
 func managedGuard(cmd *cobra.Command, args []string) error {
 	s := newStore()
 	managed, err := s.IsOpmManaged()
@@ -64,5 +64,5 @@ func managedGuard(cmd *cobra.Command, args []string) error {
 }
 
 func warnCurrentCacheUpdate(cmd *cobra.Command, err error) {
-	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: updated live symlink state, but failed to update current cache: %v\n", err)
+	output.Warning(cmd.ErrOrStderr(), "Updated live symlink state", "failed to update current cache: "+err.Error())
 }

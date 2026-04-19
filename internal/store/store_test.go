@@ -824,7 +824,7 @@ func TestCopyProfile_SymlinkSourceRejected(t *testing.T) {
 
 	err := s.CopyProfile("src", "dst")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "context \"src\" is not a directory")
+	assert.Contains(t, err.Error(), "profile \"src\" is not a directory")
 }
 
 func TestReset_PreservesProfiles(t *testing.T) {

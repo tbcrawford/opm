@@ -13,7 +13,7 @@ import (
 )
 
 // validName enforces profile name safety — per D-17.
-// Mirrors docker context naming: alphanumeric start, allows _ . - , max 63 chars.
+// Mirrors Docker's broad naming flexibility: alphanumeric start, allows _ . - , max 63 chars.
 var validName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,62}$`)
 
 // Profile represents a discovered opm profile.
@@ -308,7 +308,7 @@ func (s *Store) GetProfile(name string) (string, error) {
 	dir := s.ProfileDir(name)
 	fi, err := os.Lstat(dir)
 	if os.IsNotExist(err) || (err == nil && !fi.IsDir()) {
-		return "", fmt.Errorf("context %q does not exist", name)
+		return "", fmt.Errorf("profile %q does not exist", name)
 	}
 	if err != nil {
 		return "", fmt.Errorf("stat profile %q: %w", name, err)
@@ -324,7 +324,7 @@ func (s *Store) CreateProfile(name string) error {
 	}
 	dir := s.ProfileDir(name)
 	if _, err := os.Lstat(dir); err == nil {
-		return fmt.Errorf("context %q already exists", name)
+		return fmt.Errorf("profile %q already exists", name)
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create profile %q: %w", name, err)
@@ -346,16 +346,16 @@ func (s *Store) CopyProfile(src, dst string) error {
 
 	srcInfo, err := os.Lstat(srcDir)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("context %q does not exist", src)
+		return fmt.Errorf("profile %q does not exist", src)
 	}
 	if err != nil {
 		return fmt.Errorf("stat profile %q: %w", src, err)
 	}
 	if srcInfo.Mode()&os.ModeSymlink != 0 || !srcInfo.IsDir() {
-		return fmt.Errorf("context %q is not a directory", src)
+		return fmt.Errorf("profile %q is not a directory", src)
 	}
 	if _, err := os.Lstat(dstDir); err == nil {
-		return fmt.Errorf("context %q already exists", dst)
+		return fmt.Errorf("profile %q already exists", dst)
 	}
 
 	return copyDir(srcDir, dstDir)
@@ -371,12 +371,12 @@ func (s *Store) DeleteProfile(name string, force bool) error {
 	if !force {
 		active, err := s.ActiveProfile()
 		if err == nil && active == name {
-			return fmt.Errorf("cannot remove active context %q — switch to another context first, or use --force", name)
+			return fmt.Errorf("cannot remove active profile %q — switch to another profile first, or use --force", name)
 		}
 	}
 	dir := s.ProfileDir(name)
 	if _, err := os.Lstat(dir); os.IsNotExist(err) {
-		return fmt.Errorf("context %q does not exist", name)
+		return fmt.Errorf("profile %q does not exist", name)
 	}
 	return os.RemoveAll(dir)
 }
@@ -406,10 +406,10 @@ func (s *Store) RenameProfile(oldName, newName string) error {
 	newDir := s.ProfileDir(newName)
 
 	if _, err := os.Lstat(oldDir); os.IsNotExist(err) {
-		return fmt.Errorf("context %q does not exist", oldName)
+		return fmt.Errorf("profile %q does not exist", oldName)
 	}
 	if _, err := os.Lstat(newDir); err == nil {
-		return fmt.Errorf("context %q already exists", newName)
+		return fmt.Errorf("profile %q already exists", newName)
 	}
 
 	if err := os.Rename(oldDir, newDir); err != nil {

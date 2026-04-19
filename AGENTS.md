@@ -5,7 +5,7 @@
 
 A Go CLI tool that manages multiple OpenCode configurations by symlinking `~/.config/opencode` to named profile directories. Users switch between completely isolated OpenCode environments (different MCPs, plugins, agents, models, AGENTS.md) with a single command.
 
-**Core Value:** Switching OpenCode profiles should be one command — `opm use <name>` — and take effect immediately without restarting anything.
+**Core Value:** Switching OpenCode profiles should be one command — `opm use <name>` — and take effect after reloading OpenCode.
 
 ### Command API
 
@@ -78,7 +78,7 @@ Names must match `^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,62}$`. Call `store.ValidateName(
 
 ### Error messages
 
-User-facing errors refer to profiles as "context" (e.g. `"context %q does not exist"`). Match this convention for consistency with the existing surface.
+User-facing errors refer to profiles as "profile" (e.g. `"profile %q does not exist"`). Match this convention for consistency with the existing surface.
 
 ### Version injection
 

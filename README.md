@@ -27,7 +27,7 @@ brew install tbcrawford/tap/opm
 ✓ Created profile experiments from work
   ~/.config/opm/profiles/experiments/
 
-# switch profiles, then reload opencode
+# switch profiles, then reload OpenCode
 ❯ opm use work
 ✓ default → work
   ~/.config/opencode → profiles/work
@@ -72,8 +72,8 @@ opm treats each context as a first-class **profile**: a full, isolated `~/.confi
 |---|---|
 | `opm init [--as <name>]` | Migrate your existing config into opm management. Non-destructive. The initial profile is named `default` unless overridden with `--as`. |
 | `opm create <name>` | Create a new empty profile. Use `--from` to clone an existing profile as the starting point. |
-| `opm use <name>` | Switch the active profile via atomic symlink swap. Restart OpenCode to pick up the new profile. |
-| `opm list [-l]` | List all profiles. Active marked `●`. Dangling marked `!`. Pass `-l` to include paths. |
+| `opm use <name>` | Switch the active profile via atomic symlink swap. Reload OpenCode to pick up the new profile. |
+| `opm list [-l]` | List all profiles. Active marked `●`. Dangling marked `✗` and shown as missing. Pass `-l` to include paths. |
 | `opm show` | Print the name of the currently active profile. |
 | `opm copy <src> <dst>` | Clone a profile to a new name. |
 | `opm rename <old> <new>` | Rename a profile. Updates the symlink atomically if active. |

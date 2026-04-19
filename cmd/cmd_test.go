@@ -345,7 +345,8 @@ func TestInit_CurrentWriteFailureWarnsButSucceeds(t *testing.T) {
 	out, stderr, err := h.run("init")
 	require.NoError(t, err)
 	assert.Contains(t, out, "Initialized opm")
-	assert.Contains(t, stderr, "warning: updated live symlink state, but failed to update current cache")
+	assert.Contains(t, stderr, "⚠ Updated live symlink state")
+	assert.Contains(t, stderr, "failed to update current cache")
 
 	target, readErr := os.Readlink(h.opencodeDir)
 	require.NoError(t, readErr)
@@ -412,7 +413,8 @@ func TestUse_CurrentWriteFailureWarnsButSucceeds(t *testing.T) {
 	out, stderr, err := h.run("use", "work")
 	require.NoError(t, err)
 	assert.Contains(t, out, "work")
-	assert.Contains(t, stderr, "warning: updated live symlink state, but failed to update current cache")
+	assert.Contains(t, stderr, "⚠ Updated live symlink state")
+	assert.Contains(t, stderr, "failed to update current cache")
 
 	target, readErr := os.Readlink(h.opencodeDir)
 	require.NoError(t, readErr)
@@ -507,7 +509,7 @@ func TestShow_PrintsActiveName(t *testing.T) {
 	assert.Equal(t, "default\n", out)
 }
 
-func TestShow_FallbackWarnsOnBrokenSymlink(t *testing.T) {
+func TestShow_BrokenManagedSymlinkErrors(t *testing.T) {
 	h := newHarness(t)
 	h.mustInit(t)
 
@@ -518,10 +520,9 @@ func TestShow_FallbackWarnsOnBrokenSymlink(t *testing.T) {
 	require.NoError(t, os.Symlink(goneDir, h.opencodeDir))
 	require.NoError(t, h.store.SetCurrent("default"))
 
-	out, stderr, err := h.run("show")
-	require.NoError(t, err)
-	assert.Equal(t, "default\n", out)
-	assert.Contains(t, stderr, "warning: symlink is broken or absent")
+	_, _, err := h.run("show")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no active profile")
 }
 
 func TestShow_BrokenSymlinkWithoutCurrentErrors(t *testing.T) {
@@ -539,17 +540,16 @@ func TestShow_BrokenSymlinkWithoutCurrentErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), "no active profile")
 }
 
-func TestShow_FallbackWhenSymlinkMissingUsesCurrent(t *testing.T) {
+func TestShow_MissingSymlinkErrorsEvenWithCurrentCache(t *testing.T) {
 	h := newHarness(t)
 	h.mustInit(t)
 
 	require.NoError(t, os.Remove(h.opencodeDir))
 	require.NoError(t, h.store.SetCurrent("default"))
 
-	out, stderr, err := h.run("show")
-	require.NoError(t, err)
-	assert.Equal(t, "default\n", out)
-	assert.Contains(t, stderr, "warning: symlink is broken or absent")
+	_, _, err := h.run("show")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no active profile")
 }
 
 func TestShow_AbsentSymlinkWithoutCurrentErrors(t *testing.T) {
@@ -672,7 +672,8 @@ func TestRemove_ForceCurrentWriteFailureWarnsButSucceeds(t *testing.T) {
 	out, stderr, err := h.run("remove", "--force", "default")
 	require.NoError(t, err)
 	assert.Contains(t, out, "Removed profile")
-	assert.Contains(t, stderr, "warning: updated live symlink state, but failed to update current cache")
+	assert.Contains(t, stderr, "⚠ Updated live symlink state")
+	assert.Contains(t, stderr, "failed to update current cache")
 	assert.NoDirExists(t, h.store.ProfileDir("default"))
 
 	target, readErr := os.Readlink(h.opencodeDir)
@@ -722,7 +723,8 @@ func TestRename_ActiveCurrentWriteFailureWarnsButSucceeds(t *testing.T) {
 	out, stderr, err := h.run("rename", "default", "primary")
 	require.NoError(t, err)
 	assert.Contains(t, out, "Renamed")
-	assert.Contains(t, stderr, "warning: updated live symlink state, but failed to update current cache")
+	assert.Contains(t, stderr, "⚠ Updated live symlink state")
+	assert.Contains(t, stderr, "failed to update current cache")
 	assert.NoDirExists(t, h.store.ProfileDir("default"))
 	assert.DirExists(t, h.store.ProfileDir("primary"))
 
@@ -815,6 +817,14 @@ func TestPath_NonexistentProfile(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestPath_HelpUsesAbsolutePathWording(t *testing.T) {
+	h := newHarness(t)
+
+	out, _, err := h.run("path", "--help")
+	require.NoError(t, err)
+	assert.Contains(t, out, "Print the absolute path to a profile directory")
+}
+
 // ── inspect ───────────────────────────────────────────────────────────────────
 
 func TestInspect_ShowsInfo(t *testing.T) {
@@ -882,10 +892,10 @@ func TestDoctor_ConsistencyMismatch(t *testing.T) {
 	assert.Contains(t, out, "warning") // Consistency section appears
 }
 
-func TestRootHelp_IncludesCompletionCommand(t *testing.T) {
+func TestRootHelp_OmitsCompletionCommand(t *testing.T) {
 	h := newHarness(t)
 
 	out, _, err := h.run("--help")
 	require.NoError(t, err)
-	assert.Contains(t, out, "completion")
+	assert.NotContains(t, out, "completion")
 }

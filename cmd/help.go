@@ -62,7 +62,6 @@ func printRootHelp(root *cobra.Command) {
 		{
 			label: "Scripting",
 			entries: []entry{
-				{"completion", "Generate shell completion scripts", ""},
 				{"path", "Print the absolute path to a profile directory", ""},
 			},
 		},

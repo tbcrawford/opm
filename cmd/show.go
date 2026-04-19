@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/symlink"
@@ -41,15 +40,8 @@ func runShow(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), name)
 		return nil
 	}
-	// If we got a real I/O error (not just "symlink absent"), surface it.
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil {
 		return fmt.Errorf("read active profile: %w", err)
-	}
-	// Symlink is absent or broken — fall back to the current file but warn the user.
-	if cached, cerr := s.GetCurrent(); cerr == nil && cached != "" {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: symlink is broken or absent; reporting cached profile name\n")
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), cached)
-		return nil
 	}
 	return fmt.Errorf("no active profile — run 'opm init' first")
 }

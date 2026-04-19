@@ -40,7 +40,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	seen := make(map[string]bool, len(args))
 	for _, name := range args {
 		if seen[name] {
-			return fmt.Errorf("context %q specified more than once", name)
+			return fmt.Errorf("profile %q specified more than once", name)
 		}
 		seen[name] = true
 	}

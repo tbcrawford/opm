@@ -8,7 +8,7 @@ import (
 
 var pathCmd = &cobra.Command{
 	Use:               "path <name>",
-	Short:             "Print the filesystem path to a profile directory",
+	Short:             "Print the absolute path to a profile directory",
 	Args:              cobra.ExactArgs(1),
 	PreRunE:           managedGuard,
 	ValidArgsFunction: singleArgProfileCompletion,
