@@ -18,6 +18,8 @@ var doctorCmd = &cobra.Command{
 }
 
 func init() {
+	markRootHelpGroup(doctorCmd, helpGroupSetup)
+	markRootHelpOrder(doctorCmd, 20)
 	rootCmd.AddCommand(doctorCmd)
 }
 

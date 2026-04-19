@@ -16,6 +16,8 @@ var renameCmd = &cobra.Command{
 }
 
 func init() {
+	markRootHelpGroup(renameCmd, helpGroupProfiles)
+	markRootHelpOrder(renameCmd, 70)
 	rootCmd.AddCommand(renameCmd)
 }
 

@@ -17,6 +17,8 @@ var pathCmd = &cobra.Command{
 }
 
 func init() {
+	markRootHelpGroup(pathCmd, helpGroupScripting)
+	markRootHelpOrder(pathCmd, 10)
 	rootCmd.AddCommand(pathCmd)
 }
 

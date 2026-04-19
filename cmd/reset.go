@@ -16,6 +16,8 @@ var resetCmd = &cobra.Command{
 }
 
 func init() {
+	markRootHelpGroup(resetCmd, helpGroupSetup)
+	markRootHelpOrder(resetCmd, 30)
 	rootCmd.AddCommand(resetCmd)
 }
 

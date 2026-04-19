@@ -904,3 +904,43 @@ func TestRootHelp_OmitsCompletionCommand(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotContains(t, out, "completion")
 }
+
+func TestBuildRootHelpSections_UsesCommandMetadata(t *testing.T) {
+	root := &cobra.Command{Use: "opm", Short: "OpenCode profile manager"}
+	setup := &cobra.Command{Use: "init", Short: "Initialize opm"}
+	profiles := &cobra.Command{Use: "list", Aliases: []string{"ls"}, Short: "List all profiles"}
+	hidden := &cobra.Command{Use: "completion", Short: "Generate completions"}
+
+	markRootHelpGroup(setup, helpGroupSetup)
+	markRootHelpGroup(profiles, helpGroupProfiles)
+	root.AddCommand(setup, profiles, hidden)
+
+	sections := buildRootHelpSections(root)
+	require.Len(t, sections, 2)
+	assert.Equal(t, helpGroupSetup, sections[0].label)
+	require.Len(t, sections[0].entries, 1)
+	assert.Equal(t, "init", sections[0].entries[0].name)
+	assert.Equal(t, "Initialize opm", sections[0].entries[0].short)
+	assert.Equal(t, "", sections[0].entries[0].alias)
+
+	assert.Equal(t, helpGroupProfiles, sections[1].label)
+	require.Len(t, sections[1].entries, 1)
+	assert.Equal(t, "list", sections[1].entries[0].name)
+	assert.Equal(t, "List all profiles", sections[1].entries[0].short)
+	assert.Equal(t, "ls", sections[1].entries[0].alias)
+}
+
+func TestBuildRootHelpSections_RealRootCommandCoversExpectedCommands(t *testing.T) {
+	sections := buildRootHelpSections(rootCmd)
+
+	byGroup := make(map[string][]string)
+	for _, section := range sections {
+		for _, entry := range section.entries {
+			byGroup[section.label] = append(byGroup[section.label], entry.name)
+		}
+	}
+
+	assert.Equal(t, []string{"init", "doctor", "reset"}, byGroup[helpGroupSetup])
+	assert.Equal(t, []string{"create", "copy", "use", "list", "show", "inspect", "rename", "remove"}, byGroup[helpGroupProfiles])
+	assert.Equal(t, []string{"path"}, byGroup[helpGroupScripting])
+}

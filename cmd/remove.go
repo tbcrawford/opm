@@ -18,6 +18,8 @@ var removeCmd = &cobra.Command{
 
 func init() {
 	removeCmd.Flags().BoolP("force", "f", false, "Force removal of the active profile (auto-switches first)")
+	markRootHelpGroup(removeCmd, helpGroupProfiles)
+	markRootHelpOrder(removeCmd, 80)
 	rootCmd.AddCommand(removeCmd)
 }
 

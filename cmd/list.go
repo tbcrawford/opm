@@ -19,6 +19,8 @@ var listCmd = &cobra.Command{
 
 func init() {
 	listCmd.Flags().BoolP("long", "l", false, "Show profile paths")
+	markRootHelpGroup(listCmd, helpGroupProfiles)
+	markRootHelpOrder(listCmd, 40)
 	rootCmd.AddCommand(listCmd)
 }
 

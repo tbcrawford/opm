@@ -3,11 +3,44 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
 )
+
+const rootHelpGroupAnnotation = "opm/root-help-group"
+const rootHelpOrderAnnotation = "opm/root-help-order"
+
+const (
+	helpGroupSetup     = "Setup"
+	helpGroupProfiles  = "Profiles"
+	helpGroupScripting = "Scripting"
+)
+
+var rootHelpGroupOrder = []string{
+	helpGroupSetup,
+	helpGroupProfiles,
+	helpGroupScripting,
+}
+
+var rootHelpGroups = map[string]bool{
+	helpGroupSetup:     true,
+	helpGroupProfiles:  true,
+	helpGroupScripting: true,
+}
+
+type rootHelpEntry struct {
+	name  string
+	short string
+	alias string
+}
+
+type rootHelpSection struct {
+	label   string
+	entries []rootHelpEntry
+}
 
 // registerHelp sets a custom help function on the root command.
 // Call this from an init() in root.go.
@@ -26,46 +59,7 @@ func printRootHelp(root *cobra.Command) {
 	w := root.OutOrStdout()
 
 	output.HelpHeader(w, "opm", "OpenCode profile manager")
-
-	type entry struct {
-		name  string
-		short string
-		alias string
-	}
-	type section struct {
-		label   string
-		entries []entry
-	}
-
-	sections := []section{
-		{
-			label: "Setup",
-			entries: []entry{
-				{"init", "Initialize opm and migrate your existing OpenCode config", ""},
-				{"doctor", "Check opm installation health", ""},
-				{"reset", "Remove opm management and restore your config directory", ""},
-			},
-		},
-		{
-			label: "Profiles",
-			entries: []entry{
-				{"create", "Create a new profile", ""},
-				{"copy", "Copy an existing profile to a new name", ""},
-				{"use", "Switch to a profile", ""},
-				{"list", "List all profiles", "ls"},
-				{"show", "Show the active profile name", ""},
-				{"inspect", "Show profile details and contents", ""},
-				{"rename", "Rename a profile", ""},
-				{"remove", "Remove one or more profiles", "rm"},
-			},
-		},
-		{
-			label: "Scripting",
-			entries: []entry{
-				{"path", "Print the absolute path to a profile directory", ""},
-			},
-		},
-	}
+	sections := buildRootHelpSections(root)
 
 	for i, sec := range sections {
 		output.HelpSection(w, sec.label)
@@ -87,4 +81,66 @@ func printRootHelp(root *cobra.Command) {
 		{"--version", "Print version and exit"},
 		{"--help", "Show this help"},
 	})
+}
+
+func markRootHelpGroup(cmd *cobra.Command, group string) {
+	if !rootHelpGroups[group] {
+		panic("unknown root help group: " + group)
+	}
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+	cmd.Annotations[rootHelpGroupAnnotation] = group
+}
+
+func markRootHelpOrder(cmd *cobra.Command, order int) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+	cmd.Annotations[rootHelpOrderAnnotation] = fmt.Sprintf("%03d", order)
+}
+
+func buildRootHelpSections(root *cobra.Command) []rootHelpSection {
+	type orderedEntry struct {
+		entry rootHelpEntry
+		order string
+	}
+	grouped := make(map[string][]orderedEntry)
+	for _, cmd := range root.Commands() {
+		group := cmd.Annotations[rootHelpGroupAnnotation]
+		if group == "" || cmd.Hidden {
+			continue
+		}
+		if !rootHelpGroups[group] {
+			panic("unknown root help group: " + group)
+		}
+		entry := rootHelpEntry{
+			name:  cmd.Name(),
+			short: cmd.Short,
+		}
+		if len(cmd.Aliases) > 0 {
+			entry.alias = cmd.Aliases[0]
+		}
+		grouped[group] = append(grouped[group], orderedEntry{entry: entry, order: cmd.Annotations[rootHelpOrderAnnotation]})
+	}
+
+	var sections []rootHelpSection
+	for _, group := range rootHelpGroupOrder {
+		entries := grouped[group]
+		if len(entries) == 0 {
+			continue
+		}
+		sort.SliceStable(entries, func(i, j int) bool {
+			if entries[i].order == entries[j].order {
+				return entries[i].entry.name < entries[j].entry.name
+			}
+			return entries[i].order < entries[j].order
+		})
+		section := rootHelpSection{label: group, entries: make([]rootHelpEntry, 0, len(entries))}
+		for _, entry := range entries {
+			section.entries = append(section.entries, entry.entry)
+		}
+		sections = append(sections, section)
+	}
+	return sections
 }

@@ -16,6 +16,8 @@ var createCmd = &cobra.Command{
 
 func init() {
 	createCmd.Flags().String("from", "", "Copy an existing profile as the starting point")
+	markRootHelpGroup(createCmd, helpGroupProfiles)
+	markRootHelpOrder(createCmd, 10)
 	rootCmd.AddCommand(createCmd)
 }
 

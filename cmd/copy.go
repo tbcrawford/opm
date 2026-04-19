@@ -16,6 +16,8 @@ var copyCmd = &cobra.Command{
 }
 
 func init() {
+	markRootHelpGroup(copyCmd, helpGroupProfiles)
+	markRootHelpOrder(copyCmd, 20)
 	rootCmd.AddCommand(copyCmd)
 }
 

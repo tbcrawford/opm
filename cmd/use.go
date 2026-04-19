@@ -19,6 +19,8 @@ var useCmd = &cobra.Command{
 }
 
 func init() {
+	markRootHelpGroup(useCmd, helpGroupProfiles)
+	markRootHelpOrder(useCmd, 30)
 	rootCmd.AddCommand(useCmd)
 }
 

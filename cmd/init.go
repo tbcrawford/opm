@@ -20,6 +20,8 @@ var initCmd = &cobra.Command{
 
 func init() {
 	initCmd.Flags().String("as", "default", "name to give the initial profile")
+	markRootHelpGroup(initCmd, helpGroupSetup)
+	markRootHelpOrder(initCmd, 10)
 	rootCmd.AddCommand(initCmd)
 }
 
