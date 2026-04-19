@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/tbcrawford/opm/internal/symlink"
+	"github.com/tbcrawford/opm/internal/store"
 )
 
 var showCmd = &cobra.Command{
@@ -20,28 +21,16 @@ func init() {
 }
 
 func runShow(cmd *cobra.Command, args []string) error {
-	s := newStore()
-	managed, err := s.IsOpmManaged()
+	name, err := newStore().ShowActiveProfile()
 	if err != nil {
-		return fmt.Errorf("cannot determine opm state: %w", err)
-	}
-	if !managed {
-		st, err := symlink.Inspect(s.OpencodeDir())
-		if err != nil {
-			return fmt.Errorf("inspect active symlink: %w", err)
-		}
-		if st.Exists {
+		if errors.Is(err, store.ErrShowNotManaged) {
 			return fmt.Errorf("~/.config/opencode is not managed by opm\n\n  Run 'opm init' to initialize")
 		}
+		if errors.Is(err, store.ErrShowNoActiveProfile) {
+			return fmt.Errorf("no active profile — run 'opm init' first")
+		}
+		return err
 	}
-
-	name, err := s.ActiveProfile()
-	if err == nil && name != "" {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), name)
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("read active profile: %w", err)
-	}
-	return fmt.Errorf("no active profile — run 'opm init' first")
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), name)
+	return nil
 }
