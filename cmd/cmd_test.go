@@ -149,28 +149,6 @@ func TestInit_AlreadyInitialized_WithExistingRequestedProfileReportsRealActivePr
 	assert.Equal(t, "already initialized (active: default)", err.Error())
 }
 
-func TestAlreadyInitializedError_UsesRealActiveProfile(t *testing.T) {
-	h := newHarness(t)
-	h.mustInit(t)
-	require.NoError(t, os.MkdirAll(h.store.ProfileDir("work"), 0o755))
-
-	err := alreadyInitializedError(h.store)
-	require.Error(t, err)
-	assert.Equal(t, "already initialized (active: default)", err.Error())
-}
-
-func TestAlreadyInitializedError_UsesDanglingManagedTargetName(t *testing.T) {
-	h := newHarness(t)
-	h.mustInit(t)
-
-	defaultDir := h.store.ProfileDir("default")
-	require.NoError(t, os.Remove(defaultDir))
-
-	err := alreadyInitializedError(h.store)
-	require.Error(t, err)
-	assert.Equal(t, "already initialized (active: default)", err.Error())
-}
-
 func TestInit_WithExistingOpencodeDir(t *testing.T) {
 	h := newHarness(t)
 	// Create a real ~/.config/opencode directory to simulate existing config.
@@ -196,7 +174,7 @@ func TestInit_RefusesRegularFileAtOpencodePath(t *testing.T) {
 
 	_, _, err := h.run("init")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "~/.config/opencode is not a directory or symlink")
+	assert.Contains(t, err.Error(), h.opencodeDir+" is not a directory or symlink")
 	assert.Contains(t, err.Error(), "Back it up and remove it")
 	assert.NoDirExists(t, h.store.ProfileDir("default"))
 }
@@ -213,7 +191,7 @@ func TestInit_RejectsStaleResumeSymlink(t *testing.T) {
 	_, _, err := h.run("init")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "stale interrupted init state detected")
-	assert.Contains(t, err.Error(), "remove ~/.config/opencode.opm-new")
+	assert.Contains(t, err.Error(), "remove "+h.opencodeDir+".opm-new")
 
 	tmpTarget, readErr := os.Readlink(h.opencodeDir + ".opm-new")
 	require.NoError(t, readErr)
@@ -232,7 +210,7 @@ func TestInit_RejectsStaleTempSymlinkOnFreshPath(t *testing.T) {
 	_, _, err := h.run("init")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "stale interrupted init state detected")
-	assert.Contains(t, err.Error(), "remove ~/.config/opencode.opm-new")
+	assert.Contains(t, err.Error(), "remove "+h.opencodeDir+".opm-new")
 
 	tmpTarget, readErr := os.Readlink(h.opencodeDir + ".opm-new")
 	require.NoError(t, readErr)
@@ -249,7 +227,7 @@ func TestInit_RejectsMalformedTempState(t *testing.T) {
 	_, _, err := h.run("init")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "stale interrupted init state detected")
-	assert.Contains(t, err.Error(), "remove ~/.config/opencode.opm-new")
+	assert.Contains(t, err.Error(), "remove "+h.opencodeDir+".opm-new")
 
 	info, statErr := os.Lstat(h.opencodeDir + ".opm-new")
 	require.NoError(t, statErr)
@@ -290,7 +268,7 @@ func TestInit_RejectsResumeTargetThatIsNotDirectory(t *testing.T) {
 	_, _, err := h.run("init")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "partial initialization detected")
-	assert.Contains(t, err.Error(), "rm -rf ~/.config/opm/profiles/default")
+	assert.Contains(t, err.Error(), "rm -rf "+profileDir)
 
 	info, statErr := os.Lstat(profileDir)
 	require.NoError(t, statErr)
@@ -311,11 +289,11 @@ func TestInit_RejectsResumeWhenOpencodeDirStillExists(t *testing.T) {
 	_, _, err := h.run("init")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "partial initialization detected")
-	assert.Contains(t, err.Error(), "~/.config/opencode still exists")
-	assert.Contains(t, err.Error(), "inspect and back up ~/.config/opencode")
-	assert.Contains(t, err.Error(), "remove ~/.config/opencode")
-	assert.Contains(t, err.Error(), "remove ~/.config/opencode.opm-new")
-	assert.NotContains(t, err.Error(), "rm -rf ~/.config/opm/profiles/default")
+	assert.Contains(t, err.Error(), h.opencodeDir+" still exists")
+	assert.Contains(t, err.Error(), "inspect and back up "+h.opencodeDir)
+	assert.Contains(t, err.Error(), "remove "+h.opencodeDir)
+	assert.Contains(t, err.Error(), "remove "+h.opencodeDir+".opm-new")
+	assert.NotContains(t, err.Error(), "rm -rf "+profileDir)
 
 	info, statErr := os.Lstat(h.opencodeDir)
 	require.NoError(t, statErr)
