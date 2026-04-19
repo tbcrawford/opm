@@ -1,12 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/tbcrawford/opm/internal/output"
-	"github.com/tbcrawford/opm/internal/symlink"
 )
 
 var renameCmd = &cobra.Command{
@@ -26,32 +22,18 @@ func init() {
 func runRename(cmd *cobra.Command, args []string) error {
 	oldName, newName := args[0], args[1]
 	s := newStore()
-
-	active, err := s.ActiveProfile()
+	result, err := s.RenameProfileAndRetarget(oldName, newName)
 	if err != nil {
-		return fmt.Errorf("determine active profile: %w", err)
-	}
-	wasActive := active == oldName
-
-	if err := s.RenameProfile(oldName, newName); err != nil {
 		return err
+	}
+	if result.CurrentCacheErr != nil {
+		warnCurrentCacheUpdate(cmd, result.CurrentCacheErr)
 	}
 
 	w := cmd.OutOrStdout()
 	msg := "Renamed " + output.ProfileName(oldName) + " → " + output.ProfileName(newName)
 
-	if wasActive {
-		newDir := s.ProfileDir(newName)
-		if err := symlink.SetAtomic(newDir, s.OpencodeDir()); err != nil {
-			// Rollback: move the directory back to its original name so OpenCode isn't broken.
-			if rerr := os.Rename(s.ProfileDir(newName), s.ProfileDir(oldName)); rerr != nil {
-				return fmt.Errorf("update active symlink: %w; rollback also failed: %v — profile directory is at %q", err, rerr, newName)
-			}
-			return fmt.Errorf("update active symlink: %w (rolled back directory rename)", err)
-		}
-		if err := s.SetCurrent(newName); err != nil {
-			warnCurrentCacheUpdate(cmd, err)
-		}
+	if result.WasActive {
 		output.Success(w, msg, "Active profile updated")
 	} else {
 		output.Success(w, msg)
