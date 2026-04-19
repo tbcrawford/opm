@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>opm — Merged Design Preview</title>
+<title>opm — OpenCode Profile Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -557,7 +557,7 @@ footer a:hover { color: var(--text-muted); }
       OpenCode Profile Manager
     </div>
     <h1 class="hero-title">
-      Switch contexts.<br><em>One command.</em>
+      Switch profiles.<br><em>One command.</em>
     </h1>
     <p class="hero-sub">
       Manage multiple isolated OpenCode environments — MCPs, agents, models, plugins — and switch between them with a single command. Reload OpenCode and your new profile is live.
@@ -577,17 +577,20 @@ footer a:hover { color: var(--text-muted); }
         <div class="term-title">opm — zsh</div>
       </div>
       <div class="term-body">
-        <div><span class="term-comment"># migrate your existing config</span></div>
+        <div><span class="term-comment"># migrate your existing config once</span></div>
         <div><span class="term-ps">$</span> <span class="term-cmd">opm init</span></div>
-        <div><span class="term-out">✓ Migrated ~/.config/opencode → profile "default"</span></div>
+        <div><span class="term-out">✓ Initialized opm</span></div>
+        <div><span class="term-out">  Created default profile at ~/.config/opm/profiles/default/</span></div>
         <div class="term-spacer"></div>
         <div><span class="term-comment"># create a new isolated profile</span></div>
         <div><span class="term-ps">$</span> <span class="term-cmd">opm create work</span></div>
-        <div><span class="term-out">✓ Created profile "work"</span></div>
+        <div><span class="term-out">✓ Created profile work</span></div>
+        <div><span class="term-out">  ~/.config/opm/profiles/work/</span></div>
         <div class="term-spacer"></div>
-        <div><span class="term-comment"># switch profiles, then reload opencode</span></div>
+        <div><span class="term-comment"># switch profiles, then reload OpenCode</span></div>
         <div><span class="term-ps">$</span> <span class="term-cmd">opm use work</span></div>
-        <div><span class="term-active">✓ Switched to profile "work"</span></div>
+        <div><span class="term-active">✓ default → work</span></div>
+        <div><span class="term-out">  ~/.config/opencode → profiles/work</span></div>
       </div>
     </div>
   </div>
@@ -674,15 +677,15 @@ footer a:hover { color: var(--text-muted); }
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm use &lt;name&gt;</div>
-      <div class="cmd-cell desc">Switch to a profile.</div>
+      <div class="cmd-cell desc">Switch the active profile via atomic symlink swap. Reload OpenCode to pick up the new profile.</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm create &lt;name&gt;</div>
-      <div class="cmd-cell desc">Create a new empty profile.</div>
+      <div class="cmd-cell desc">Create a new empty profile. Use <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--from</code> to clone an existing profile as the starting point.</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm list</div>
-      <div class="cmd-cell desc">List all profiles, showing which is currently active.</div>
+      <div class="cmd-cell desc">List all profiles. Active is marked <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">●</code>. Dangling profiles are marked <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">✗</code> and shown as missing.</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm show</div>
@@ -690,11 +693,11 @@ footer a:hover { color: var(--text-muted); }
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm inspect &lt;name&gt;</div>
-      <div class="cmd-cell desc">Show detailed information about a profile.</div>
+      <div class="cmd-cell desc">Show profile details and directory contents.</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm rename &lt;old&gt; &lt;new&gt;</div>
-      <div class="cmd-cell desc">Rename an existing profile.</div>
+      <div class="cmd-cell desc">Rename a profile. Updates the symlink atomically if active.</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm copy &lt;src&gt; &lt;dst&gt;</div>
@@ -702,11 +705,11 @@ footer a:hover { color: var(--text-muted); }
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm remove &lt;name&gt; [name...]</div>
-      <div class="cmd-cell desc">Remove one or more profiles.</div>
+      <div class="cmd-cell desc">Remove one or more profiles. Refuses the active profile without <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--force</code>.</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm path &lt;name&gt;</div>
-      <div class="cmd-cell desc">Print the filesystem path to a profile directory.</div>
+      <div class="cmd-cell desc">Print the absolute path to a profile directory.</div>
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm reset</div>
@@ -714,7 +717,7 @@ footer a:hover { color: var(--text-muted); }
     </div>
     <div class="cmd-row">
       <div class="cmd-cell monospace">opm doctor</div>
-      <div class="cmd-cell desc">Check opm installation health.</div>
+      <div class="cmd-cell desc">Run installation health checks. Exits with code 1 on failure.</div>
     </div>
   </div>
 </section>
