@@ -15,6 +15,10 @@ brew install tbcrawford/tap/opm
 
 ## Quick Start
 
+<p align="center">
+  <img src="assets/demo/readme-quick-start.gif" alt="Terminal demo showing opm init, create work, use work, and list" width="720" />
+</p>
+
 ```sh
 # migrate your current OpenCode config once
 ❯ opm init
