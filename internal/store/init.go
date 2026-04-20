@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/tbcrawford/opm/internal/symlink"
 )
@@ -196,7 +195,10 @@ func (s *Store) displayPath(path string) string {
 	if err != nil || home == "" {
 		return path
 	}
-	if strings.HasPrefix(path, home) {
+	if path == home {
+		return "~"
+	}
+	if len(path) > len(home) && path[:len(home)] == home && os.IsPathSeparator(path[len(home)]) {
 		return "~" + path[len(home):]
 	}
 	return path

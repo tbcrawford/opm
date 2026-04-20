@@ -500,7 +500,8 @@ func TestShow_BrokenManagedSymlinkErrors(t *testing.T) {
 
 	_, _, err := h.run("show")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no active profile")
+	assert.Contains(t, err.Error(), "active profile is broken")
+	assert.Contains(t, err.Error(), "Run 'opm list'")
 }
 
 func TestShow_BrokenSymlinkWithoutCurrentErrors(t *testing.T) {
@@ -515,7 +516,7 @@ func TestShow_BrokenSymlinkWithoutCurrentErrors(t *testing.T) {
 
 	_, _, err := h.run("show")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no active profile")
+	assert.Contains(t, err.Error(), "active profile is broken")
 }
 
 func TestShow_MissingSymlinkErrorsEvenWithCurrentCache(t *testing.T) {
@@ -527,7 +528,7 @@ func TestShow_MissingSymlinkErrorsEvenWithCurrentCache(t *testing.T) {
 
 	_, _, err := h.run("show")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no active profile")
+	assert.Contains(t, err.Error(), "active profile is broken")
 }
 
 func TestShow_AbsentSymlinkWithoutCurrentErrors(t *testing.T) {
@@ -550,6 +551,15 @@ func TestShow_ForeignSymlinkRejected(t *testing.T) {
 	_, _, err := h.run("show")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not managed by opm")
+}
+
+func TestCompletion_UnmanagedReturnsEmptyWithoutErrorDirective(t *testing.T) {
+	h := newHarness(t)
+	h.useStoreFactory(t)
+
+	names, directive := singleArgProfileCompletion(useCmd, nil, "")
+	assert.Empty(t, names)
+	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
 }
 
 // ── remove ────────────────────────────────────────────────────────────────────

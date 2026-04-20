@@ -61,7 +61,7 @@ func SetAtomic(target, linkPath string) error {
 	currentPrefix := ".opm-tmp-" + base + "-" + strconv.Itoa(os.Getpid()) + "-"
 
 	// Clean up the legacy shared tmp name from older runs.
-	_ = os.Remove(legacyTmp)
+	_ = removeTempSymlinkIfSafe(legacyTmp)
 
 	matches, err := filepath.Glob(filepath.Join(dir, ".opm-tmp-"+base+"-*"))
 	if err != nil {
@@ -71,7 +71,7 @@ func SetAtomic(target, linkPath string) error {
 		if !shouldRemoveTemp(filepath.Base(match), base) {
 			continue
 		}
-		_ = os.Remove(match)
+		_ = removeTempSymlinkIfSafe(match)
 	}
 
 	tmpFile, err := os.CreateTemp(dir, currentPrefix+"*")
@@ -96,6 +96,20 @@ func SetAtomic(target, linkPath string) error {
 		return fmt.Errorf("atomic swap: %w", err)
 	}
 	return nil
+}
+
+func removeTempSymlinkIfSafe(path string) error {
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		return nil
+	}
+	return os.Remove(path)
 }
 
 func shouldRemoveTemp(name, base string) bool {

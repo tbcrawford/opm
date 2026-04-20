@@ -70,6 +70,11 @@ func TestShortenHome_NotUnderHome(t *testing.T) {
 	assert.Equal(t, "/etc/foo", output.ShortenHome("/etc/foo"))
 }
 
+func TestShortenHome_DoesNotShortenSiblingPrefix(t *testing.T) {
+	home, _ := os.UserHomeDir()
+	assert.Equal(t, home+"-other/foo", output.ShortenHome(home+"-other/foo"))
+}
+
 func TestProfileTable_Mixed(t *testing.T) {
 	var buf bytes.Buffer
 	profiles := []store.Profile{

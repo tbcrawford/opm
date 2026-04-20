@@ -48,7 +48,7 @@ func TestStore_ShowActiveProfile_DanglingManagedSymlinkReturnsNoActiveProfile(t 
 
 	_, err := st.ShowActiveProfile()
 	require.Error(t, err)
-	assert.ErrorIs(t, err, store.ErrShowNoActiveProfile)
+	assert.ErrorIs(t, err, store.ErrShowBrokenManaged)
 }
 
 func TestStore_ShowActiveProfile_ManagedMissingSymlinkWithCurrentCacheReturnsNoActiveProfile(t *testing.T) {
@@ -61,7 +61,7 @@ func TestStore_ShowActiveProfile_ManagedMissingSymlinkWithCurrentCacheReturnsNoA
 
 	_, err := st.ShowActiveProfile()
 	require.Error(t, err)
-	assert.ErrorIs(t, err, store.ErrShowNoActiveProfile)
+	assert.ErrorIs(t, err, store.ErrShowBrokenManaged)
 }
 
 func TestStore_ShowActiveProfile_ExistingDirectoryReturnsNotManaged(t *testing.T) {

@@ -28,6 +28,9 @@ func runShow(cmd *cobra.Command, args []string) error {
 		if errors.Is(err, store.ErrShowNotManaged) {
 			return fmt.Errorf("~/.config/opencode is not managed by opm\n\n  Run 'opm init' to initialize")
 		}
+		if errors.Is(err, store.ErrShowBrokenManaged) {
+			return fmt.Errorf("active profile is broken\n\n  Run 'opm list' to inspect profiles\n  Then use 'opm use <name>' to restore a valid active profile")
+		}
 		if errors.Is(err, store.ErrShowNoActiveProfile) {
 			return fmt.Errorf("no active profile — run 'opm init' first")
 		}

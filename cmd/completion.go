@@ -35,7 +35,7 @@ func completeProfileNames(args []string, maxArgs int, excludeSelected bool) ([]s
 		return nil, cobra.ShellCompDirectiveError
 	}
 	if !managed {
-		return nil, cobra.ShellCompDirectiveError
+		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 	return names, cobra.ShellCompDirectiveNoFileComp
 }

@@ -179,6 +179,40 @@ func TestSetAtomic_LeftoverRandomizedTmpCleaned(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestSetAtomic_DoesNotDeleteRegularFileMatchingTempPrefix(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "profile")
+	require.NoError(t, os.Mkdir(target, 0o755))
+	link := filepath.Join(dir, "opencode")
+
+	protected := filepath.Join(dir, ".opm-tmp-opencode-999999-note")
+	require.NoError(t, os.WriteFile(protected, []byte("keep me"), 0o644))
+
+	err := symlink.SetAtomic(target, link)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(protected)
+	require.NoError(t, err)
+	assert.Equal(t, "keep me", string(data))
+}
+
+func TestSetAtomic_DoesNotDeleteDirectoryMatchingTempPrefix(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "profile")
+	require.NoError(t, os.Mkdir(target, 0o755))
+	link := filepath.Join(dir, "opencode")
+
+	protected := filepath.Join(dir, ".opm-tmp-opencode-999999-dir")
+	require.NoError(t, os.Mkdir(protected, 0o755))
+
+	err := symlink.SetAtomic(target, link)
+	require.NoError(t, err)
+
+	info, err := os.Stat(protected)
+	require.NoError(t, err)
+	assert.True(t, info.IsDir())
+}
+
 func TestSetAtomic_ConcurrentCallsShareNoTempName(t *testing.T) {
 	dir := t.TempDir()
 	link := filepath.Join(dir, "opencode")
