@@ -16,6 +16,10 @@ type RenameProfileResult struct {
 // RenameProfileAndRetarget renames a profile and, if it was active, retargets
 // the managed symlink and updates the current cache.
 func (s *Store) RenameProfileAndRetarget(oldName, newName string) (RenameProfileResult, error) {
+	if renameProfileAndRetargetOverride != nil {
+		return renameProfileAndRetargetOverride(s, oldName, newName)
+	}
+
 	active, err := s.ActiveProfile()
 	if err != nil {
 		return RenameProfileResult{}, fmt.Errorf("determine active profile: %w", err)

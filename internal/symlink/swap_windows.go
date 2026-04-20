@@ -40,6 +40,9 @@ func swapLinkOnce(tmpLink, linkPath string) error {
 		return syscall.ERROR_ACCESS_DENIED
 	}
 	if err := os.Remove(linkPath); err != nil {
+		if os.IsNotExist(err) {
+			return os.Rename(tmpLink, linkPath)
+		}
 		return err
 	}
 	return os.Rename(tmpLink, linkPath)

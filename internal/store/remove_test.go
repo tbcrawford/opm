@@ -1,11 +1,13 @@
 package store_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tbcrawford/opm/internal/store"
 )
 
 func TestStore_RemoveProfiles_NonActive(t *testing.T) {
@@ -136,12 +138,13 @@ func TestStore_RemoveProfiles_ReturnsPartialResultWhenDeleteFailsAfterSwitch(t *
 	require.NoError(t, os.Symlink(st.ProfileDir("default"), opencodeDir))
 	require.NoError(t, st.SetCurrent("default"))
 	breakStoreCurrentPath(t, st)
-
-	profilesDir := st.ProfilesDir()
-	info, err := os.Stat(profilesDir)
-	require.NoError(t, err)
-	require.NoError(t, os.Chmod(profilesDir, 0o555))
-	t.Cleanup(func() { _ = os.Chmod(profilesDir, info.Mode()) })
+	restore := store.TestHookDeleteProfile(t, func(s *store.Store, name string, force bool) error {
+		if name == "default" {
+			return fmt.Errorf("delete profile %q: injected failure", name)
+		}
+		return s.DeleteProfile(name, force)
+	})
+	t.Cleanup(restore)
 
 	result, err := st.RemoveProfiles([]string{"default"}, true)
 	require.Error(t, err)

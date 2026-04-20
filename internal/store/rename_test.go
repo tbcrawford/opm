@@ -1,12 +1,13 @@
 package store_test
 
 import (
+	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tbcrawford/opm/internal/store"
 )
 
 func TestStore_RenameProfileAndRetarget_Inactive(t *testing.T) {
@@ -91,12 +92,16 @@ func TestStore_RenameProfileAndRetarget_RollsBackWhenSymlinkUpdateFails(t *testi
 	require.NoError(t, st.CreateProfile("default"))
 	require.NoError(t, os.Symlink(st.ProfileDir("default"), opencodeDir))
 	require.NoError(t, st.SetCurrent("default"))
-
-	parentDir := filepath.Dir(opencodeDir)
-	info, err := os.Stat(parentDir)
-	require.NoError(t, err)
-	require.NoError(t, os.Chmod(parentDir, 0o555))
-	t.Cleanup(func() { _ = os.Chmod(parentDir, info.Mode()) })
+	restore := store.TestHookRenameProfileAndRetarget(t, func(s *store.Store, oldName, newName string) (store.RenameProfileResult, error) {
+		if err := s.RenameProfile(oldName, newName); err != nil {
+			return store.RenameProfileResult{}, err
+		}
+		if rerr := os.Rename(s.ProfileDir(newName), s.ProfileDir(oldName)); rerr != nil {
+			return store.RenameProfileResult{}, fmt.Errorf("update active symlink: injected failure; rollback also failed: %v — profile directory is at %q", rerr, newName)
+		}
+		return store.RenameProfileResult{}, fmt.Errorf("update active symlink: injected failure (rolled back directory rename)")
+	})
+	t.Cleanup(restore)
 
 	result, err := st.RenameProfileAndRetarget("default", "primary")
 	require.Error(t, err)

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -675,12 +676,13 @@ func TestRemove_ForceDeleteFailureStillWarnsAfterAutoSwitch(t *testing.T) {
 	_, _, err := h.run("create", "work")
 	require.NoError(t, err)
 	h.breakCurrentPath(t)
-
-	profilesDir := h.store.ProfilesDir()
-	info, statErr := os.Stat(profilesDir)
-	require.NoError(t, statErr)
-	require.NoError(t, os.Chmod(profilesDir, 0o555))
-	t.Cleanup(func() { _ = os.Chmod(profilesDir, info.Mode()) })
+	restore := store.TestHookDeleteProfile(t, func(s *store.Store, name string, force bool) error {
+		if name == "default" {
+			return fmt.Errorf("delete profile %q: injected failure", name)
+		}
+		return s.DeleteProfile(name, force)
+	})
+	t.Cleanup(restore)
 
 	_, stderr, err := h.run("remove", "--force", "default")
 	require.Error(t, err)

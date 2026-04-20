@@ -365,6 +365,9 @@ func (s *Store) CopyProfile(src, dst string) error {
 // If force is false, refuses to delete the active profile.
 // If force is true, the caller is responsible for switching the symlink first (per D-01/D-02/D-03).
 func (s *Store) DeleteProfile(name string, force bool) error {
+	if deleteProfileOverride != nil {
+		return deleteProfileOverride(s, name, force)
+	}
 	if err := ValidateName(name); err != nil {
 		return err
 	}
