@@ -1,8 +1,8 @@
 # opm — OpenCode Profile Manager
-# Development commands modeled after Gradle's core task lifecycle.
 # All commands are single words.
 
 set dotenv-load := true
+set quiet := true
 
 binary := "opm"
 module := `go list -m`
@@ -13,22 +13,22 @@ help:
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
-# Fetch and tidy dependencies (like Gradle's `dependencies`)
+# Fetch and tidy dependencies
 deps:
     go mod tidy
     go mod download
 
-# Compile the binary (like Gradle's `assemble`)
+# Compile the binary
 assemble:
     go build -o {{ binary }} .
 
-# Compile with version/commit metadata injected (like Gradle's `build`)
+# Compile with version/commit metadata injected
 build:
     go build \
         -ldflags "-s -w -X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev) -X main.commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" \
         -o {{ binary }} .
 
-# Run all tests (like Gradle's `test`)
+# Run all tests
 test:
     go test ./...
 
@@ -40,13 +40,13 @@ testv:
 race:
     go test -race ./...
 
-# Generate test coverage report (like Gradle's `jacocoTestReport`)
+# Generate test coverage report
 cover:
     go test -coverprofile=coverage.out ./...
     go tool cover -html=coverage.out -o coverage.html
     @echo "Coverage report: coverage.html"
 
-# Lint and vet the codebase (like Gradle's `check`)
+# Lint and vet the codebase
 check:
     go vet ./...
     golangci-lint run
@@ -55,18 +55,18 @@ check:
 fmt:
     gofmt -w .
 
-# Run check + test (like Gradle's `verify`)
+# Run check + test
 verify: check test
 
-# Build cross-platform release archives via GoReleaser (like Gradle's `publish`)
+# Build cross-platform release archives via GoReleaser
 release:
     goreleaser release --clean
 
-# Dry-run release build without publishing (like Gradle's `publishToMavenLocal`)
+# Dry-run release build without publishing
 snapshot:
     goreleaser release --snapshot --clean
 
-# Remove build artifacts (like Gradle's `clean`)
+# Remove build artifacts
 clean:
     rm -f {{ binary }} coverage.out coverage.html
     rm -rf dist/
@@ -77,7 +77,7 @@ clean:
 run *args:
     go run . {{ args }}
 
-# Install the binary to $GOPATH/bin (like Gradle's `install`)
+# Install the binary to $GOPATH/bin
 install:
     go install .
 

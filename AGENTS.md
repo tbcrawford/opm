@@ -68,6 +68,21 @@ Use `just` — not `make` or raw `go` commands — for all lifecycle tasks:
 
 Run a single package's tests: `go test ./internal/store/...`
 
+### Pre-commit checklist
+
+Before every commit, run:
+
+```sh
+just fmt     # format all Go source files
+just verify  # vet + lint + test (CI equivalent)
+```
+
+Both must pass with no errors before committing.
+
+### Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description`. Common types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`. Example: `feat(store): add rename command`.
+
 ### Linting
 
 `golangci-lint` v2.x with `.golangci.yml`. Enabled linters: `errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`. All error returns must be handled (checked by `errcheck`) — use `_ =` explicitly for intentional ignores.
