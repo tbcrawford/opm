@@ -44,23 +44,36 @@ A short terminal walkthrough will show this exact flow so you can see how little
 
 ---
 
-## The Problem
+## Why opm
 
-### Config files shouldn't slow you down.
+OpenCode setups tend to drift into roles.
 
-You use OpenCode for work with strict MCPs and a locked model, for personal projects with different tools and a relaxed `AGENTS.md`, and for experimenting with new tooling you don't want near a working setup. Every context switch means editing files by hand — tedious, error-prone, and one bad paste away from breaking something.
+- **Work** needs strict MCPs, specific models, and a locked-down `AGENTS.md`.
+- **Personal projects** want different tools, different defaults, and less ceremony.
+- **Experiments** should be free to break without touching the setup you actually rely on.
 
-opm treats each context as a first-class **profile**: a full, isolated `~/.config/opencode/` directory. Switching is a single symlink swap.
+Without profiles, switching contexts means editing files by hand, remembering what you changed last time, and hoping you undo all of it correctly.
 
-<br>
+`opm` turns each context into a first-class profile: a complete, isolated `~/.config/opencode/` directory that you can switch to with a single command.
 
-**Completely isolated** — Each profile has its own MCPs, agents, models, plugins, and `AGENTS.md`. Nothing bleeds between contexts.
+## What a profile isolates
 
-**Atomic switching** — The symlink swap is atomic. There is no window where `~/.config/opencode` is absent or in a bad state. Reload OpenCode after switching to pick up the new profile.
+Every profile is its own OpenCode environment.
 
-**Your workflow, completely unchanged** — opm works transparently beneath OpenCode. Your active profile lives at `~/.config/opencode` — the same path OpenCode has always used. Edit configs, install MCPs, add agents — everything works exactly as it always has. Any tool that writes to `~/.config/opencode` is writing directly into your active profile. No special paths, no wrapper commands.
+- MCP configuration
+- agents and prompts
+- model selection
+- plugins and local tweaks
+- `AGENTS.md` rules and project-specific behavior
 
-**Safe to experiment** — Clone a working profile, break things freely. Your production config is never touched. Switch back to restore it.
+Nothing leaks between profiles unless you explicitly copy it.
+
+## Why it feels good to use
+
+- **Fast to switch**: `opm use <name>` updates the active profile in one step.
+- **Safe to experiment**: copy a working profile, try whatever you want, and switch back.
+- **Transparent**: OpenCode still reads and writes `~/.config/opencode` like it always has.
+- **Low overhead**: no wrapper workflow, no special edit path, no new mental model after setup.
 
 <br>
 
