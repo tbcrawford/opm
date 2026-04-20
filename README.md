@@ -26,7 +26,7 @@ brew install tbcrawford/tap/opm
 ✓ Created profile work
   profiles/work/
 
-# switch instantly
+# switch instantly, then reload OpenCode
 ❯ opm use work
 ✓ default → work
   ~/.config/opencode → profiles/work
@@ -38,7 +38,7 @@ brew install tbcrawford/tap/opm
 
 Each profile is a full OpenCode config directory. Switching changes what `~/.config/opencode` points to, so OpenCode keeps using the same path it already knows.
 
-A short terminal walkthrough will show this exact flow so you can see how little ceremony is involved.
+That is the whole flow: one command to switch, same path, no config surgery.
 
 <br>
 
@@ -54,7 +54,7 @@ OpenCode setups tend to drift into roles.
 
 Without profiles, switching contexts means editing files by hand, remembering what you changed last time, and hoping you undo all of it correctly.
 
-`opm` turns each context into a first-class profile: a complete, isolated `~/.config/opencode/` directory that you can switch to with a single command.
+`opm` turns each context into a first-class profile: a complete, isolated OpenCode config directory under `~/.config/opm/profiles/` that you can switch to with a single command.
 
 ## What a profile isolates
 
@@ -79,9 +79,33 @@ Nothing leaks between profiles unless you explicitly copy it.
 
 ---
 
-## Commands
+## Install
 
-### The complete surface area.
+### Get it installed in under a minute.
+
+**Homebrew**
+
+```sh
+brew install tbcrawford/tap/opm
+```
+
+**Go**
+
+```sh
+go install github.com/tbcrawford/opm@latest
+```
+
+**Prebuilt binary**
+
+Download the latest release from [GitHub Releases](https://github.com/tbcrawford/opm/releases), extract it, and place `opm` in your `$PATH`.
+
+<br>
+
+---
+
+## Command Reference
+
+Everything `opm` exposes for day-to-day use, without context trees.
 
 | Command | Description |
 |---|---|
@@ -92,7 +116,7 @@ Nothing leaks between profiles unless you explicitly copy it.
 | `opm show` | Print the name of the currently active profile. |
 | `opm copy <src> <dst>` | Clone a profile to a new name. |
 | `opm rename <old> <new>` | Rename a profile. Updates the symlink atomically if active. |
-| `opm remove <name...>` | Remove one or more profiles. Refuses the active profile without `--force`. |
+| `opm remove <name> [name...]` | Remove one or more profiles. Refuses the active profile without `--force`. |
 | `opm path <name>` | Print the absolute path to a profile directory. Useful for scripting. |
 | `opm inspect <name>` | Show profile details and directory contents. |
 | `opm doctor` | Run installation health checks. Exits with code 1 on failure. |
@@ -110,43 +134,25 @@ opm completion fish > ~/.config/fish/completions/opm.fish  # fish
 
 ---
 
-## Install
-
-### Up and running in under a minute.
-
-**Homebrew** (macOS)
-```sh
-brew install tbcrawford/tap/opm
-```
-
-**Go**
-```sh
-go install github.com/tbcrawford/opm@latest
-```
-
-**Binary** — download the latest release from [GitHub Releases](https://github.com/tbcrawford/opm/releases), extract, and place `opm` in your `$PATH`.
-
-<br>
-
----
-
 ## How it works
 
-`opm init` moves your existing `~/.config/opencode/` into a named profile directory — `default` by default, or a name of your choosing with `--as` — and replaces it with a symlink. From that point on, `opm use <name>` atomically repoints the symlink to a different profile:
+`opm init` moves your existing OpenCode config into a named profile directory and replaces `~/.config/opencode` with a symlink.
+
+After that, switching profiles is just repointing the managed symlink:
 
 ```
 ~/.config/opencode  →  ~/.config/opm/profiles/work/
 ```
 
-Everything OpenCode reads and writes goes to the active profile transparently.
+That means OpenCode, your tools, and your own muscle memory all keep using the same path as before.
 
 ```
 ~/.config/opm/
-├── current                  # active profile name (plain text)
+├── current
 └── profiles/
-    ├── default/             # full OpenCode config directories
+    ├── default/
     ├── work/
-    └── personal/
+    └── experiments/
 ```
 
 <br>
