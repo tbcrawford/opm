@@ -63,7 +63,9 @@ func TestProfileName(t *testing.T) {
 
 func TestShortenHome_UnderHome(t *testing.T) {
 	home, _ := os.UserHomeDir()
-	assert.Equal(t, "~/foo/bar", output.ShortenHome(home+"/foo/bar"))
+	path := filepath.Join(home, "foo", "bar")
+	expected := "~" + string(filepath.Separator) + filepath.Join("foo", "bar")
+	assert.Equal(t, expected, output.ShortenHome(path))
 }
 
 func TestShortenHome_NotUnderHome(t *testing.T) {
@@ -72,7 +74,7 @@ func TestShortenHome_NotUnderHome(t *testing.T) {
 
 func TestShortenHome_DoesNotShortenSiblingPrefix(t *testing.T) {
 	home, _ := os.UserHomeDir()
-	assert.Equal(t, home+"-other/foo", output.ShortenHome(home+"-other/foo"))
+	assert.Equal(t, home+"-other"+string(filepath.Separator)+"foo", output.ShortenHome(home+"-other"+string(filepath.Separator)+"foo"))
 }
 
 func TestProfileTable_Mixed(t *testing.T) {

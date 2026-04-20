@@ -89,7 +89,7 @@ func SetAtomic(target, linkPath string) error {
 		return fmt.Errorf("create temp symlink: %w", err)
 	}
 
-	if err := os.Rename(tmpLink, linkPath); err != nil {
+	if err := swapLink(tmpLink, linkPath); err != nil {
 		_ = os.Remove(tmpLink) // best-effort cleanup
 		return fmt.Errorf("atomic swap: %w", err)
 	}

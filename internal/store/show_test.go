@@ -3,6 +3,7 @@ package store_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,6 +75,10 @@ func TestStore_ShowActiveProfile_ExistingDirectoryReturnsNotManaged(t *testing.T
 }
 
 func TestStore_ShowActiveProfile_InspectFailureIsWrapped(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission-based inspect failure is not portable on Windows")
+	}
+
 	st, opencodeDir := newTestStore(t)
 	parent := filepath.Dir(opencodeDir)
 	info, err := os.Stat(parent)

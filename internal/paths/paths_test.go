@@ -16,7 +16,7 @@ func TestOpmDir_IsAbsolute(t *testing.T) {
 
 func TestOpmDir_ContainsConfigOpm(t *testing.T) {
 	dir := paths.OpmDir()
-	assert.True(t, strings.Contains(dir, ".config/opm"), "OpmDir() should contain .config/opm, got %q", dir)
+	assert.True(t, strings.Contains(dir, filepath.Join(".config", "opm")), "OpmDir() should contain .config/opm, got %q", dir)
 }
 
 func TestOpencodeConfigDir_IsAbsolute(t *testing.T) {
@@ -26,7 +26,7 @@ func TestOpencodeConfigDir_IsAbsolute(t *testing.T) {
 
 func TestOpencodeConfigDir_ContainsConfigOpencode(t *testing.T) {
 	dir := paths.OpencodeConfigDir()
-	assert.True(t, strings.Contains(dir, ".config/opencode"), "OpencodeConfigDir() should contain .config/opencode, got %q", dir)
+	assert.True(t, strings.Contains(dir, filepath.Join(".config", "opencode")), "OpencodeConfigDir() should contain .config/opencode, got %q", dir)
 }
 
 func TestProfilesDir_IsAbsolute(t *testing.T) {
@@ -37,7 +37,10 @@ func TestProfilesDir_IsAbsolute(t *testing.T) {
 func TestProfilesDir_IsUnderOpmDir(t *testing.T) {
 	opm := paths.OpmDir()
 	profiles := paths.ProfilesDir()
-	assert.True(t, strings.HasPrefix(profiles, opm), "ProfilesDir() should be under OpmDir(), got %q vs %q", profiles, opm)
+	rel, err := filepath.Rel(opm, profiles)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "..", rel)
+	assert.False(t, strings.HasPrefix(rel, ".."+string(filepath.Separator)), "ProfilesDir() should be under OpmDir(), got %q vs %q", profiles, opm)
 }
 
 func TestProfileDir_IsAbsolute(t *testing.T) {
@@ -47,13 +50,16 @@ func TestProfileDir_IsAbsolute(t *testing.T) {
 
 func TestProfileDir_ContainsName(t *testing.T) {
 	dir := paths.ProfileDir("work")
-	assert.True(t, strings.HasSuffix(dir, "/work"), "ProfileDir(\"work\") should end with /work, got %q", dir)
+	assert.Equal(t, "work", filepath.Base(dir), "ProfileDir(\"work\") should end with work, got %q", dir)
 }
 
 func TestProfileDir_IsUnderProfilesDir(t *testing.T) {
 	profiles := paths.ProfilesDir()
 	dir := paths.ProfileDir("myprofile")
-	assert.True(t, strings.HasPrefix(dir, profiles), "ProfileDir() should be under ProfilesDir(), got %q", dir)
+	rel, err := filepath.Rel(profiles, dir)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "..", rel)
+	assert.False(t, strings.HasPrefix(rel, ".."+string(filepath.Separator)), "ProfileDir() should be under ProfilesDir(), got %q", dir)
 }
 
 func TestCurrentFile_IsAbsolute(t *testing.T) {
@@ -64,12 +70,15 @@ func TestCurrentFile_IsAbsolute(t *testing.T) {
 func TestCurrentFile_IsUnderOpmDir(t *testing.T) {
 	opm := paths.OpmDir()
 	f := paths.CurrentFile()
-	assert.True(t, strings.HasPrefix(f, opm), "CurrentFile() should be under OpmDir(), got %q", f)
+	rel, err := filepath.Rel(opm, f)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "..", rel)
+	assert.False(t, strings.HasPrefix(rel, ".."+string(filepath.Separator)), "CurrentFile() should be under OpmDir(), got %q", f)
 }
 
 func TestCurrentFile_EndsWithCurrent(t *testing.T) {
 	f := paths.CurrentFile()
-	assert.True(t, strings.HasSuffix(f, "/current"), "CurrentFile() should end with /current, got %q", f)
+	assert.Equal(t, "current", filepath.Base(f), "CurrentFile() should end with current, got %q", f)
 }
 
 // Ensure none of the paths use UserConfigDir (which returns ~/Library/Application Support on macOS).
