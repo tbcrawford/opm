@@ -24,7 +24,7 @@ brew install tbcrawford/tap/opm
 # create a second environment for a different context
 ❯ opm create work
 ✓ Created profile work
-  ~/.config/opm/profiles/work/
+  profiles/work/
 
 # switch instantly
 ❯ opm use work
