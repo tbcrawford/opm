@@ -6,7 +6,6 @@ import (
 	"errors"
 	"os"
 	"syscall"
-	"time"
 
 	"golang.org/x/sys/windows"
 )
@@ -16,16 +15,9 @@ func swapLink(tmpLink, linkPath string) error {
 		return swapLinkOverride(tmpLink, linkPath)
 	}
 
-	for attempt := 0; attempt < 5; attempt++ {
-		if err := swapLinkOnce(tmpLink, linkPath); err == nil {
-			return nil
-		} else if !isRetryableSwapErr(err) || attempt == 4 {
-			return err
-		}
-		time.Sleep(time.Duration(attempt+1) * 25 * time.Millisecond)
-	}
-
-	return nil
+	return retrySwap(12, swapLinkSleepOverride, func() error {
+		return swapLinkOnce(tmpLink, linkPath)
+	}, isRetryableSwapErr)
 }
 
 func swapLinkOnce(tmpLink, linkPath string) error {
@@ -49,5 +41,5 @@ func swapLinkOnce(tmpLink, linkPath string) error {
 }
 
 func isRetryableSwapErr(err error) bool {
-	return errors.Is(err, windows.ERROR_ACCESS_DENIED) || errors.Is(err, windows.ERROR_SHARING_VIOLATION)
+	return os.IsPermission(err) || errors.Is(err, windows.ERROR_ACCESS_DENIED) || errors.Is(err, windows.ERROR_SHARING_VIOLATION)
 }
