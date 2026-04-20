@@ -88,3 +88,8 @@ uninstall:
 # Watch for changes and re-run tests (requires watchexec)
 watch:
     watchexec --exts go -- go test ./...
+
+# Regenerate the README quick-start demo GIF from its VHS tape
+demo-readme:
+    mkdir -p assets/demo
+    vhs demo/readme-quick-start.tape
