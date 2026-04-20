@@ -16,7 +16,7 @@ brew install tbcrawford/tap/opm
 ## Quick Start
 
 ```sh
-# migrate your current OpenCode config once
+# initialize opm and create your first profile
 ❯ opm init
 ✓ Initialized opm
   Created default profile at ~/.config/opm/profiles/default/
@@ -38,7 +38,7 @@ brew install tbcrawford/tap/opm
 
 Each profile is a full OpenCode config directory. Switching changes what `~/.config/opencode` points to, so OpenCode keeps using the same path it already knows.
 
-This is the exact flow a short terminal demo will show once the README gets a recorded walkthrough.
+A short terminal walkthrough will land here soon so you can watch the full flow before you try it.
 
 <br>
 
