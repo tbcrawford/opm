@@ -2,7 +2,8 @@
 
 <img src="assets/banner.png" alt="opm — OpenCode Profile Manager" width="720"/>
 
-Switch between completely isolated OpenCode environments —<br>different MCPs, agents, models, and configs — with a single command.
+Switch between completely isolated OpenCode environments with one command.<br>
+Different MCPs, agents, models, plugins, and `AGENTS.md` files. No manual config surgery.
 
 ```sh
 brew install tbcrawford/tap/opm
@@ -12,31 +13,32 @@ brew install tbcrawford/tap/opm
 
 </div>
 
-```
-# migrate your existing config once
+## Quick Start
+
+```sh
+# migrate your current OpenCode config once
 ❯ opm init
 ✓ Initialized opm
   Created default profile at ~/.config/opm/profiles/default/
 
-# create profiles for every context
+# create a second environment for a different context
 ❯ opm create work
 ✓ Created profile work
   ~/.config/opm/profiles/work/
 
-❯ opm create experiments --from work
-✓ Created profile experiments from work
-  ~/.config/opm/profiles/experiments/
-
-# switch profiles, then reload OpenCode
+# switch instantly
 ❯ opm use work
 ✓ default → work
   ~/.config/opencode → profiles/work
 
 ❯ opm list
 ○ default
-○ experiments
 ● work
 ```
+
+Each profile is a full OpenCode config directory. Switching changes what `~/.config/opencode` points to, so OpenCode keeps using the same path it already knows.
+
+This is the exact flow a short terminal demo will show once the README gets a recorded walkthrough.
 
 <br>
 
