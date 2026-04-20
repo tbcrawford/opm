@@ -1,6 +1,7 @@
 Output "assets/demo/readme-quick-start.gif"
 
 Require just
+Require go
 Require mkdir
 Require rm
 Require env
@@ -22,7 +23,11 @@ Set TypingSpeed 90ms
 # Regenerate with: just demo-readme
 
 Hide
+Type "just assemble"
+Enter
 Type "export DEMO_HOME=$(mktemp -d)"
+Enter
+Type "export PATH=$PWD:$PATH"
 Enter
 Type "mkdir -p $DEMO_HOME/.config/opencode"
 Enter
@@ -32,22 +37,24 @@ Type "clear"
 Enter
 Show
 
-Type "HOME=$DEMO_HOME just run init"
+Type "HOME=$DEMO_HOME opm init"
 Enter
 Sleep 1.2s
 
-Type "HOME=$DEMO_HOME just run create work"
+Type "HOME=$DEMO_HOME opm create work"
 Enter
 Sleep 1.0s
 
-Type "HOME=$DEMO_HOME just run use work"
+Type "HOME=$DEMO_HOME opm use work"
 Enter
 Sleep 1.0s
 
-Type "HOME=$DEMO_HOME just run list"
+Type "HOME=$DEMO_HOME opm list"
 Enter
 Sleep 1.5s
 
 Hide
+Type "rm -f opm"
+Enter
 Type "rm -rf $DEMO_HOME"
 Enter
