@@ -3,27 +3,48 @@
 package symlink
 
 import (
+	"errors"
 	"os"
+	"syscall"
+	"time"
 
 	"golang.org/x/sys/windows"
 )
 
 func swapLink(tmpLink, linkPath string) error {
-	tmpPtr, err := windows.UTF16PtrFromString(tmpLink)
-	if err != nil {
-		return err
-	}
-	dstPtr, err := windows.UTF16PtrFromString(linkPath)
-	if err != nil {
-		return err
+	if swapLinkOverride != nil {
+		return swapLinkOverride(tmpLink, linkPath)
 	}
 
-	err = windows.MoveFileEx(tmpPtr, dstPtr, windows.MOVEFILE_REPLACE_EXISTING)
-	if err == nil {
-		return nil
+	for attempt := 0; attempt < 5; attempt++ {
+		if err := swapLinkOnce(tmpLink, linkPath); err == nil {
+			return nil
+		} else if !isRetryableSwapErr(err) || attempt == 4 {
+			return err
+		}
+		time.Sleep(time.Duration(attempt+1) * 25 * time.Millisecond)
 	}
-	if !os.IsNotExist(err) {
+
+	return nil
+}
+
+func swapLinkOnce(tmpLink, linkPath string) error {
+	info, err := os.Lstat(linkPath)
+	if os.IsNotExist(err) {
+		return os.Rename(tmpLink, linkPath)
+	}
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		return syscall.ERROR_ACCESS_DENIED
+	}
+	if err := os.Remove(linkPath); err != nil {
 		return err
 	}
 	return os.Rename(tmpLink, linkPath)
+}
+
+func isRetryableSwapErr(err error) bool {
+	return errors.Is(err, windows.ERROR_ACCESS_DENIED) || errors.Is(err, windows.ERROR_SHARING_VIOLATION)
 }

@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -121,6 +122,54 @@ func TestSetAtomic_Replace(t *testing.T) {
 	got, err := os.Readlink(link)
 	require.NoError(t, err)
 	assert.Equal(t, target2, got)
+}
+
+func TestSetAtomic_ReplaceDanglingSymlink(t *testing.T) {
+	dir := t.TempDir()
+	oldTarget := filepath.Join(dir, "profile-old")
+	newTarget := filepath.Join(dir, "profile-new")
+	require.NoError(t, os.Mkdir(oldTarget, 0o755))
+	link := filepath.Join(dir, "opencode")
+	require.NoError(t, os.Symlink(oldTarget, link))
+	require.NoError(t, os.Rename(oldTarget, newTarget))
+
+	err := symlink.SetAtomic(newTarget, link)
+	require.NoError(t, err)
+
+	got, err := os.Readlink(link)
+	require.NoError(t, err)
+	assert.Equal(t, newTarget, got)
+}
+
+func TestSetAtomic_ReplacesExistingLinkWhenSwapRenameCannotReplace(t *testing.T) {
+	dir := t.TempDir()
+	target1 := filepath.Join(dir, "profile1")
+	target2 := filepath.Join(dir, "profile2")
+	require.NoError(t, os.Mkdir(target1, 0o755))
+	require.NoError(t, os.Mkdir(target2, 0o755))
+	link := filepath.Join(dir, "opencode")
+	require.NoError(t, os.Symlink(target1, link))
+
+	restore := symlink.TestHookSwapLink(t, func(tmpLink, linkPath string) error {
+		if err := os.Remove(linkPath); err != nil {
+			return err
+		}
+		return os.Rename(tmpLink, linkPath)
+	})
+	t.Cleanup(restore)
+
+	err := symlink.SetAtomic(target2, link)
+	require.NoError(t, err)
+
+	got, err := os.Readlink(link)
+	require.NoError(t, err)
+	assert.Equal(t, target2, got)
+
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	for _, entry := range entries {
+		assert.False(t, strings.HasPrefix(entry.Name(), ".opm-tmp-"), "temp file should be cleaned up after fallback replace")
+	}
 }
 
 func TestSetAtomic_LeftoverTmpCleaned(t *testing.T) {
