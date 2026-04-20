@@ -59,6 +59,7 @@ The output should stay close to the real CLI, but the README may still keep a li
 The tape should:
 
 - create and use an isolated temporary `HOME`
+- export the temporary `HOME` during hidden setup so the visible demo can show plain `opm` commands
 - seed `~/.config/opencode` with a minimal real directory so `opm init` migrates something meaningful
 - run the built `opm` binary or the repo's standard developer entrypoint in a way that works from the repo checkout
 - cleanly show the commands and success output for `init`, `create`, `use`, and `list`
@@ -71,13 +72,13 @@ The tape should not:
 
 ## README Integration
 
-The README should embed the GIF directly below `## Quick Start` and above the shell snippet.
+The README should embed the GIF directly below `## Quick Start` and replace the now-redundant shell snippet.
 
 The embed should:
 
 - render at a medium width appropriate for the quick-start section
 - use alt text that makes sense for readers and accessibility tools
-- keep the existing quick-start code block beneath it
+- keep the short explanatory copy beneath it
 
 The README should not add a large maintenance section. The demo should feel like a natural part of the quick-start section, not a separate documentation feature.
 

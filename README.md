@@ -15,36 +15,13 @@ brew install tbcrawford/tap/opm
 
 ## Quick Start
 
-<p align="center">
-  <img src="assets/demo/readme-quick-start.gif" alt="Terminal demo showing opm init, create work, use work, and list" width="720" />
-</p>
-
-```sh
-# migrate your current OpenCode config once
-❯ opm init
-✓ Initialized opm
-  Migrated ~/.config/opencode → profiles/default
-
-# create a second environment for a different context
-❯ opm create work
-✓ Created profile work
-  profiles/work/
-
-# switch instantly, then reload OpenCode
-❯ opm use work
-✓ default → work
-  ~/.config/opencode → profiles/work
-
-❯ opm list
-○ default
-● work
-```
-
 Each profile is a full OpenCode config directory. Switching changes what `~/.config/opencode` points to, so OpenCode keeps using the same path it already knows.
 
 That is the whole flow: one command to switch, same path, no config surgery.
 
-<br>
+<p align="center">
+  <img src="assets/demo/readme-quick-start.gif" alt="Terminal demo showing opm init, create work, use work, and list" width="720" />
+</p>
 
 ---
 
@@ -79,8 +56,6 @@ Nothing leaks between profiles unless you explicitly copy it.
 - **Transparent**: OpenCode still reads and writes `~/.config/opencode` like it always has.
 - **Low overhead**: no wrapper workflow, no special edit path, no new mental model after setup.
 
-<br>
-
 ---
 
 ## Install
@@ -102,8 +77,6 @@ go install github.com/tbcrawford/opm@latest
 **Prebuilt binary**
 
 Download the latest release from [GitHub Releases](https://github.com/tbcrawford/opm/releases), extract it, and place `opm` in your `$PATH`.
-
-<br>
 
 ---
 
@@ -133,8 +106,6 @@ opm completion bash > /etc/bash_completion.d/opm   # bash
 opm completion zsh  > "${fpath[1]}/_opm"           # zsh
 opm completion fish > ~/.config/fish/completions/opm.fish  # fish
 ```
-
-<br>
 
 ---
 
