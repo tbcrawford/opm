@@ -178,3 +178,108 @@ func TestStore_Initialize_CurrentWriteFailureIsNonFatal(t *testing.T) {
 	assert.Equal(t, "default", active)
 	assert.DirExists(t, st.ProfileDir("default"))
 }
+
+// TestStore_Initialize_ReinitAfterReset checks the primary scenario:
+// opm reset left a plain opencodeDir + profile dir intact; opm init
+// should remove the plain dir and reinstall the symlink.
+func TestStore_Initialize_ReinitAfterReset(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+
+	// Simulate a completed init.
+	_, err := st.Initialize("default")
+	require.NoError(t, err)
+
+	// Simulate opm reset: replace symlink with a plain directory copy.
+	profileDir := st.ProfileDir("default")
+	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "opencode.json"), []byte(`{}`), 0o644))
+	require.NoError(t, os.Remove(opencodeDir))                       // remove symlink
+	require.NoError(t, os.MkdirAll(opencodeDir, 0o755))              // restore as plain dir
+	require.NoError(t, os.WriteFile(filepath.Join(opencodeDir, "opencode.json"), []byte(`{}`), 0o644))
+	_ = os.Remove(filepath.Join(st.OpmDir(), "current"))             // reset removes current file
+
+	// Re-init should succeed.
+	result, err := st.Initialize("default")
+	require.NoError(t, err)
+	assert.False(t, result.Migrated)
+	assert.NoError(t, result.CurrentCacheErr)
+	assert.Equal(t, profileDir, result.ProfileDir)
+
+	// opencodeDir must now be a symlink to the profile.
+	target, err := os.Readlink(opencodeDir)
+	require.NoError(t, err)
+	assert.Equal(t, profileDir, target)
+
+	active, err := st.ActiveProfile()
+	require.NoError(t, err)
+	assert.Equal(t, "default", active)
+
+	current, err := st.GetCurrent()
+	require.NoError(t, err)
+	assert.Equal(t, "default", current)
+
+	// Profile directory contents must be preserved — reinit only removes the plain opencodeDir copy.
+	assert.FileExists(t, filepath.Join(profileDir, "opencode.json"))
+}
+
+// TestStore_Initialize_ReinitAfterReset_MultipleProfiles checks that when
+// multiple profiles exist (from before the reset) they are left untouched
+// and the named profile is activated.
+func TestStore_Initialize_ReinitAfterReset_MultipleProfiles(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+
+	// Simulate a completed init with two profiles.
+	_, err := st.Initialize("default")
+	require.NoError(t, err)
+	require.NoError(t, st.CreateProfile("work"))
+
+	// Simulate opm reset: remove symlink, restore plain dir.
+	defaultProfileDir := st.ProfileDir("default")
+	require.NoError(t, os.Remove(opencodeDir))
+	require.NoError(t, os.MkdirAll(opencodeDir, 0o755))
+	_ = os.Remove(filepath.Join(st.OpmDir(), "current"))
+
+	// Re-init with --as work.
+	workProfileDir := st.ProfileDir("work")
+	result, err := st.Initialize("work")
+	require.NoError(t, err)
+	assert.Equal(t, workProfileDir, result.ProfileDir)
+
+	target, err := os.Readlink(opencodeDir)
+	require.NoError(t, err)
+	assert.Equal(t, workProfileDir, target)
+
+	// "default" profile must still be intact.
+	assert.DirExists(t, defaultProfileDir)
+}
+
+// TestStore_Initialize_ReinitAfterReset_NewProfileName checks that when
+// --as names a profile that does NOT exist, init falls through to normal
+// migration (moves opencodeDir into the new profile).
+func TestStore_Initialize_ReinitAfterReset_NewProfileName(t *testing.T) {
+	st, opencodeDir := newTestStore(t)
+
+	// Simulate a completed init.
+	_, err := st.Initialize("default")
+	require.NoError(t, err)
+
+	// Simulate opm reset.
+	require.NoError(t, os.Remove(opencodeDir))
+	require.NoError(t, os.MkdirAll(opencodeDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(opencodeDir, "marker.txt"), []byte("hello"), 0o644))
+	_ = os.Remove(filepath.Join(st.OpmDir(), "current"))
+
+	// Re-init with --as fresh (does not exist).
+	freshProfileDir := st.ProfileDir("fresh")
+	result, err := st.Initialize("fresh")
+	require.NoError(t, err)
+	assert.True(t, result.Migrated)
+	assert.Equal(t, freshProfileDir, result.ProfileDir)
+
+	// opencodeDir must now be a symlink to the new profile.
+	target, err := os.Readlink(opencodeDir)
+	require.NoError(t, err)
+	assert.Equal(t, freshProfileDir, target)
+
+	// The marker file from opencodeDir must have been migrated.
+	assert.FileExists(t, filepath.Join(freshProfileDir, "marker.txt"))
+}

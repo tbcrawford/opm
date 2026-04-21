@@ -92,6 +92,24 @@ func (s *Store) checkForPartialInit(profileName, tmpSym, profileDir string, open
 			if mErr == nil && managed {
 				return InitResult{}, false, s.alreadyInitializedError()
 			}
+			// opencodeDir exists as a plain directory: this is the post-reset state
+			// (opm reset copied the active profile back to opencodeDir and left profiles
+			// intact). Remove the plain directory and reinstate the symlink.
+			if opencodeExists {
+				if err := os.RemoveAll(s.OpencodeDir()); err != nil {
+					return InitResult{}, false, fmt.Errorf("remove plain opencode dir: %w", err)
+				}
+				if err := symlink.SetAtomic(profileDir, s.OpencodeDir()); err != nil {
+					return InitResult{}, false, fmt.Errorf("reinstate symlink: %w", err)
+				}
+				return InitResult{
+					ProfileDir:      profileDir,
+					Migrated:        false,
+					CurrentCacheErr: s.SetCurrent(profileName),
+				}, true, nil
+			}
+			// opencodeDir does not exist but the profile dir does — genuinely unexpected
+			// partial state that requires manual recovery.
 			return InitResult{}, false, fmt.Errorf(
 				"partial initialization detected: %s exists but %s is not managed by opm\n\n"+
 					"  To recover:\n"+
