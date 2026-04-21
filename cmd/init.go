@@ -42,13 +42,15 @@ func runInit(cmd *cobra.Command, args []string) error {
 		warnCurrentCacheUpdate(cmd, result.CurrentCacheErr)
 	}
 
-	if result.Migrated {
+	switch {
+	case result.Migrated:
 		output.Success(cmd.OutOrStdout(), "Initialized opm", "Migrated ~/.config/opencode → profiles/"+profileName)
-		return nil
+	case result.Reinstated:
+		output.Success(cmd.OutOrStdout(), "Reinitialized opm", "Reconnected to existing profile "+profileName+" at "+output.ShortenHome(result.ProfileDir)+"/")
+	default:
+		output.Success(cmd.OutOrStdout(), "Initialized opm",
+			"Created "+profileName+" profile at "+output.ShortenHome(result.ProfileDir)+"/",
+		)
 	}
-
-	output.Success(cmd.OutOrStdout(), "Initialized opm",
-		"Created "+profileName+" profile at "+output.ShortenHome(result.ProfileDir)+"/",
-	)
 	return nil
 }

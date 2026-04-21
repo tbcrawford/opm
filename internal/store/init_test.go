@@ -201,6 +201,7 @@ func TestStore_Initialize_ReinitAfterReset(t *testing.T) {
 	result, err := st.Initialize("default")
 	require.NoError(t, err)
 	assert.False(t, result.Migrated)
+	assert.True(t, result.Reinstated)
 	assert.NoError(t, result.CurrentCacheErr)
 	assert.Equal(t, profileDir, result.ProfileDir)
 
