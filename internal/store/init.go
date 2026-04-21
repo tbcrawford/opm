@@ -103,12 +103,12 @@ func (s *Store) checkForPartialInit(profileName, tmpSym, profileDir string, open
 				if err := symlink.SetAtomic(profileDir, s.OpencodeDir()); err != nil {
 					return InitResult{}, false, fmt.Errorf("reinstate symlink: %w", err)
 				}
-			return InitResult{
-				ProfileDir:      profileDir,
-				Migrated:        false,
-				Reinstated:      true,
-				CurrentCacheErr: s.SetCurrent(profileName),
-			}, true, nil
+				return InitResult{
+					ProfileDir:      profileDir,
+					Migrated:        false,
+					Reinstated:      true,
+					CurrentCacheErr: s.SetCurrent(profileName),
+				}, true, nil
 			}
 			// opencodeDir does not exist but the profile dir does — genuinely unexpected
 			// partial state that requires manual recovery.

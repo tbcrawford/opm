@@ -192,10 +192,10 @@ func TestStore_Initialize_ReinitAfterReset(t *testing.T) {
 	// Simulate opm reset: replace symlink with a plain directory copy.
 	profileDir := st.ProfileDir("default")
 	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "opencode.json"), []byte(`{}`), 0o644))
-	require.NoError(t, os.Remove(opencodeDir))                       // remove symlink
-	require.NoError(t, os.MkdirAll(opencodeDir, 0o755))              // restore as plain dir
+	require.NoError(t, os.Remove(opencodeDir))          // remove symlink
+	require.NoError(t, os.MkdirAll(opencodeDir, 0o755)) // restore as plain dir
 	require.NoError(t, os.WriteFile(filepath.Join(opencodeDir, "opencode.json"), []byte(`{}`), 0o644))
-	_ = os.Remove(filepath.Join(st.OpmDir(), "current"))             // reset removes current file
+	_ = os.Remove(filepath.Join(st.OpmDir(), "current")) // reset removes current file
 
 	// Re-init should succeed.
 	result, err := st.Initialize("default")
