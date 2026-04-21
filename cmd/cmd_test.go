@@ -966,3 +966,25 @@ func TestBuildRootHelpSections_RealRootCommandCoversExpectedCommands(t *testing.
 	assert.Equal(t, []string{"create", "copy", "use", "list", "show", "inspect", "rename", "remove"}, byGroup[helpGroupProfiles])
 	assert.Equal(t, []string{"path"}, byGroup[helpGroupScripting])
 }
+
+func TestCmd_Init_ReinitAfterReset(t *testing.T) {
+	h := newHarness(t)
+
+	// First init.
+	stdout, _, err := h.run("init")
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "Initialized opm")
+
+	// Simulate reset: remove symlink, restore plain dir, remove current file.
+	profileDir := h.store.ProfileDir("default")
+	require.NoError(t, os.Remove(h.opencodeDir))
+	require.NoError(t, os.MkdirAll(h.opencodeDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(profileDir, "opencode.json"), []byte(`{}`), 0o644))
+	_ = os.Remove(filepath.Join(h.store.OpmDir(), "current"))
+
+	// Re-init.
+	stdout, _, err = h.run("init")
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "Reinitialized opm")
+	assert.Contains(t, stdout, "default")
+}
