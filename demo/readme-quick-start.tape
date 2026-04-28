@@ -60,7 +60,7 @@ Enter
 Sleep 0.8s
 
 # Show exec: spawn a command under the personal profile — global profile unchanged.
-Type "opm exec personal -- sh -c 'basename $(readlink $XDG_CONFIG_HOME/opencode)'"
+Type "opm exec personal -- echo 'Hello from personal'"
 Enter
 Sleep 1.5s
 
