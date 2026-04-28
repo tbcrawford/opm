@@ -55,6 +55,20 @@ Type "opm list"
 Enter
 Sleep 1.5s
 
+Type "opm create personal"
+Enter
+Sleep 0.8s
+
+# Show exec: spawn a command under the personal profile — global profile unchanged.
+Type "opm exec personal -- sh -c 'basename $(readlink $XDG_CONFIG_HOME/opencode)'"
+Enter
+Sleep 1.5s
+
+# The global active profile is still "work".
+Type "opm show"
+Enter
+Sleep 1.5s
+
 Hide
 Type "rm -f opm"
 Enter
