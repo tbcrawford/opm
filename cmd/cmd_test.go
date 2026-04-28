@@ -1015,13 +1015,16 @@ func TestExec_SetsXDGConfigHome(t *testing.T) {
 	_, _, err = h.run("create", "work")
 	require.NoError(t, err)
 
-	// Run a command that prints the resolved target of $XDG_CONFIG_HOME/opencode
-	// so we can verify the symlink points at the profile dir — checked during exec,
-	// before the temp dir is cleaned up.
-	stdout, _, err := h.run("exec", "work", "--", "sh", "-c", "readlink \"$XDG_CONFIG_HOME/opencode\"")
-	require.NoError(t, err)
+	// Write a marker file into the profile dir. If XDG_CONFIG_HOME is wired
+	// correctly, the child process can read it via $XDG_CONFIG_HOME/opencode/.
+	// This avoids readlink, whose output format differs between platforms
+	// (MSYS on Windows returns POSIX paths, not Windows paths).
+	marker := filepath.Join(h.store.ProfileDir("work"), ".opm-exec-marker")
+	require.NoError(t, os.WriteFile(marker, []byte("opm-ok"), 0o644))
 
-	assert.Equal(t, h.store.ProfileDir("work"), strings.TrimSpace(stdout))
+	stdout, _, err := h.run("exec", "work", "--", "sh", "-c", "cat \"$XDG_CONFIG_HOME/opencode/.opm-exec-marker\"")
+	require.NoError(t, err)
+	assert.Equal(t, "opm-ok", strings.TrimSpace(stdout))
 }
 
 func TestExec_GlobalSymlinkUnchanged(t *testing.T) {
