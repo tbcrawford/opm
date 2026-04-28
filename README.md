@@ -56,6 +56,23 @@ Nothing leaks between profiles unless you explicitly copy it.
 - **Transparent**: OpenCode still reads and writes `~/.config/opencode` like it always has.
 - **Low overhead**: no wrapper workflow, no special edit path, no new mental model after setup.
 
+## Per-project sessions with `opm exec`
+
+`opm use` sets the global active profile — everything from that point forward uses it. For project-specific setups where you want a different profile for a single session without touching the global state, use `opm exec`:
+
+```sh
+# Start opencode with the "work" profile, regardless of what opm use last set.
+opm exec work
+
+# Pass flags through to opencode.
+opm exec personal -- opencode --no-auto-update
+
+# Run any command with the profile's config in scope.
+opm exec ci -- opencode run "fix the tests"
+```
+
+`opm exec` sets `XDG_CONFIG_HOME` to a temporary directory containing a symlink to the named profile, then spawns the command. The global active profile — what `opm show` returns — is never touched. When the command exits, the temp directory is cleaned up automatically.
+
 ---
 
 ## Install
@@ -89,6 +106,7 @@ Everything `opm` exposes for day-to-day use, without context trees.
 | `opm init [--as <name>]` | Migrate your existing config into opm management. Non-destructive. The initial profile is named `default` unless overridden with `--as`. |
 | `opm create <name>` | Create a new empty profile. Use `--from` to clone an existing profile as the starting point. |
 | `opm use <name>` | Switch the active profile via atomic symlink swap. Reload OpenCode to pick up the new profile. |
+| `opm exec <name> [-- command [args...]]` | Run `opencode` (or any command) using the named profile **without** changing the global active profile. Useful for per-project sessions. |
 | `opm list [-l]` | List all profiles. Active marked `●`. Dangling marked `✗` and shown as missing. Pass `-l` to include paths. |
 | `opm show` | Print the name of the currently active profile. |
 | `opm copy <src> <dst>` | Clone a profile to a new name. |

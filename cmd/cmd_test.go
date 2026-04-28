@@ -963,7 +963,7 @@ func TestBuildRootHelpSections_RealRootCommandCoversExpectedCommands(t *testing.
 	}
 
 	assert.Equal(t, []string{"init", "doctor", "reset"}, byGroup[helpGroupSetup])
-	assert.Equal(t, []string{"create", "copy", "use", "list", "show", "inspect", "rename", "remove"}, byGroup[helpGroupProfiles])
+	assert.Equal(t, []string{"create", "copy", "use", "exec", "list", "show", "inspect", "rename", "remove"}, byGroup[helpGroupProfiles])
 	assert.Equal(t, []string{"path"}, byGroup[helpGroupScripting])
 }
 
@@ -987,4 +987,95 @@ func TestCmd_Init_ReinitAfterReset(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "Reinitialized opm")
 	assert.Contains(t, stdout, "default")
+}
+
+func TestExec_UnknownProfile_ReturnsError(t *testing.T) {
+	h := newHarness(t)
+	_, _, err := h.run("init")
+	require.NoError(t, err)
+
+	_, _, err = h.run("exec", "ghost")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"ghost"`)
+}
+
+func TestExec_InvalidName_ReturnsError(t *testing.T) {
+	h := newHarness(t)
+	_, _, err := h.run("init")
+	require.NoError(t, err)
+
+	_, _, err = h.run("exec", "../evil")
+	require.Error(t, err)
+}
+
+func TestExec_SetsXDGConfigHome(t *testing.T) {
+	h := newHarness(t)
+	_, _, err := h.run("init")
+	require.NoError(t, err)
+	_, _, err = h.run("create", "work")
+	require.NoError(t, err)
+
+	// Write a marker file into the profile dir. If XDG_CONFIG_HOME is wired
+	// correctly, the child process can read it via $XDG_CONFIG_HOME/opencode/.
+	// This avoids readlink, whose output format differs between platforms
+	// (MSYS on Windows returns POSIX paths, not Windows paths).
+	marker := filepath.Join(h.store.ProfileDir("work"), ".opm-exec-marker")
+	require.NoError(t, os.WriteFile(marker, []byte("opm-ok"), 0o644))
+
+	stdout, _, err := h.run("exec", "work", "--", "sh", "-c", "cat \"$XDG_CONFIG_HOME/opencode/.opm-exec-marker\"")
+	require.NoError(t, err)
+	assert.Equal(t, "opm-ok", strings.TrimSpace(stdout))
+}
+
+func TestExec_GlobalSymlinkUnchanged(t *testing.T) {
+	h := newHarness(t)
+	_, _, err := h.run("init")
+	require.NoError(t, err)
+	_, _, err = h.run("create", "personal")
+	require.NoError(t, err)
+	_, _, err = h.run("use", "personal")
+	require.NoError(t, err)
+
+	// Create a second profile and exec with it.
+	_, _, err = h.run("create", "work")
+	require.NoError(t, err)
+	_, _, err = h.run("exec", "work", "--", "sh", "-c", ":")
+	require.NoError(t, err)
+
+	// Global active profile must still be "personal".
+	active, aerr := h.store.ActiveProfile()
+	require.NoError(t, aerr)
+	assert.Equal(t, "personal", active)
+}
+
+func TestExec_EphemeralDirCleanedUp(t *testing.T) {
+	h := newHarness(t)
+	_, _, err := h.run("init")
+	require.NoError(t, err)
+	_, _, err = h.run("create", "work")
+	require.NoError(t, err)
+
+	// Capture the XDG_CONFIG_HOME path during exec.
+	stdout, _, err := h.run("exec", "work", "--", "sh", "-c", "printf '%s' \"$XDG_CONFIG_HOME\"")
+	require.NoError(t, err)
+	capturedXDG := strings.TrimSpace(stdout)
+	require.NotEmpty(t, capturedXDG)
+
+	// After exec returns, the temp dir must have been removed.
+	_, statErr := os.Stat(capturedXDG)
+	assert.True(t, os.IsNotExist(statErr), "ephemeral dir %s should be cleaned up after exec", capturedXDG)
+}
+
+func TestExec_PassesThroughArgs(t *testing.T) {
+	h := newHarness(t)
+	_, _, err := h.run("init")
+	require.NoError(t, err)
+	_, _, err = h.run("create", "work")
+	require.NoError(t, err)
+
+	// Pass multiple args through to the child command.
+	stdout, _, err := h.run("exec", "work", "--", "sh", "-c", "echo $1 $2", "--", "hello", "world")
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "hello")
+	assert.Contains(t, stdout, "world")
 }
