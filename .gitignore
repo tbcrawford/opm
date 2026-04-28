@@ -51,3 +51,7 @@ go.work.sum
 
 # env file
 .env
+
+# Tooling state
+.bg-shell/
+.gsd/

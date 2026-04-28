@@ -55,25 +55,6 @@ Type "opm list"
 Enter
 Sleep 1.5s
 
-Type "opm create personal"
-Enter
-Sleep 0.8s
-
-Hide
-Type "alias opencode=true"
-Enter
-Show
-
-# Show exec: spawn opencode under personal — global profile unchanged.
-Type "opm exec personal"
-Enter
-Sleep 1.5s
-
-# The global active profile is still "work".
-Type "opm show"
-Enter
-Sleep 1.5s
-
 Hide
 Type "rm -f opm"
 Enter
