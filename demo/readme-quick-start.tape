@@ -59,8 +59,13 @@ Type "opm create personal"
 Enter
 Sleep 0.8s
 
-# Show exec: spawn a command under the personal profile — global profile unchanged.
-Type "opm exec personal -- echo 'Hello from personal'"
+Hide
+Type "alias opencode=true"
+Enter
+Show
+
+# Show exec: spawn opencode under personal — global profile unchanged.
+Type "opm exec personal"
 Enter
 Sleep 1.5s
 
